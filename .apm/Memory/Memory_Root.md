@@ -10,3 +10,13 @@
 * Logs:
   * [Task 1.1 - Project Initialization](file:///Users/victor.herrera/Workspace/tasklist-tool/.apm/Memory/Phase_01_Scaffolding_Config/Task_1_1_Initialize_Extension_Project_Structure.md)
   * [Task 1.2 - LM Tool Definitions](file:///Users/victor.herrera/Workspace/tasklist-tool/.apm/Memory/Phase_01_Scaffolding_Config/Task_1_2_Configure_LM_Tool_Contribution_Points.md)
+
+## Phase 02 – Data Layer & Core Services Summary
+* Implemented `TaskManager` with full task lifecycle state machine backed by lazy-initialized `.tasks/index.json`. 33 unit tests.
+* Implemented `ArtifactRegistry` with two-tier template loading (5 built-in templates + workspace overrides), YAML frontmatter parsing via `js-yaml`, and persistent type registration. 27 unit tests.
+* Implemented `ArtifactService` wiring both services for artifact file I/O (`listArtifacts`, `getArtifact`, `updateArtifact`). 23 unit tests. All 83 tests passing.
+* Involved Agent: Agent_Core
+* Logs:
+  * [Task 2.1 - Task Manager](file:///Users/victor.herrera/Workspace/tasklist-tool/.apm/Memory/Phase_02_Data_Layer_Services/Task_2_1_Implement_Task_Manager_Service.md)
+  * [Task 2.2 - Artifact Registry](file:///Users/victor.herrera/Workspace/tasklist-tool/.apm/Memory/Phase_02_Data_Layer_Services/Task_2_2_Implement_Artifact_Registry.md)
+  * [Task 2.3 - Artifact File I/O](file:///Users/victor.herrera/Workspace/tasklist-tool/.apm/Memory/Phase_02_Data_Layer_Services/Task_2_3_Implement_Artifact_File_IO.md)
