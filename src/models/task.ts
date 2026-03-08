@@ -1,0 +1,39 @@
+/**
+ * Represents the lifecycle status of a task.
+ *
+ * Tasks follow a strict state machine:
+ *   `open` → `in-progress` → `closed`
+ */
+export enum TaskStatus {
+    Open = 'open',
+    InProgress = 'in-progress',
+    Closed = 'closed',
+}
+
+/**
+ * Represents a single task entry as stored in `.tasks/index.json`.
+ */
+export interface TaskEntry {
+    /** Unique, URL-friendly identifier for the task (e.g. `'feature-login'`). */
+    id: string;
+
+    /** Current lifecycle status of the task. */
+    status: TaskStatus;
+
+    /** Unix timestamp (ms) when the task was created. */
+    createdAt: number;
+
+    /** Unix timestamp (ms) when the task was last updated. */
+    updatedAt: number;
+}
+
+/**
+ * The root structure of the `.tasks/index.json` file.
+ */
+export interface TaskIndex {
+    /** The `id` of the currently active task, or `null` when none is active. */
+    activeTaskId: string | null;
+
+    /** Ordered list of all task entries in the workspace. */
+    tasks: TaskEntry[];
+}
