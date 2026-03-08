@@ -236,6 +236,7 @@
     "test": "vscode-test"
   },
   "devDependencies": {
+    "@types/js-yaml": "^4.0.9",
     "@types/mocha": "^10.0.10",
     "@types/node": "20.x",
     "@types/vscode": "^1.100.0",
@@ -245,5 +246,8 @@
     "@vscode/test-electron": "^2.4.1",
     "eslint": "^8.57.1",
     "typescript": "^5.7.3"
+  },
+  "dependencies": {
+    "js-yaml": "^4.1.1"
   }
 }
