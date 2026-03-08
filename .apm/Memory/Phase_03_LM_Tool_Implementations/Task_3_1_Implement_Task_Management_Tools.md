@@ -1,7 +1,7 @@
 ---
 agent: Agent_Core
 task_ref: Task 3.1 – Implement Task Management Tools
-status: Partial
+status: Completed
 ad_hoc_delegation: false
 compatibility_issues: false
 important_findings: false
@@ -10,47 +10,47 @@ important_findings: false
 # Task Log: Task 3.1 – Implement Task Management Tools
 
 ## Summary
-Completed **Step 1** (Interfaces & Tool Implementations). Created `src/tools/interfaces.ts` and all 6 LM tool class files. The project compiles cleanly and all 83 pre-existing tests continue to pass. **Step 2 (Unit Testing & Verification) is pending user confirmation.**
+All 7 deliverable files created and verified. 51 new Mocha TDD tests pass alongside the 83 pre-existing tests (134 total, 0 failures). The compile step is clean with no TypeScript errors.
 
 ## Details
 
-### Design Decisions
-- `ITaskIdParams` is shared across `activate_task`, `deactivate_task`, `start_task`, and `close_task`. The `DeactivateTaskTool` accepts but ignores `taskId` at runtime for schema consistency with the other tools.
-- Each tool catches service-layer errors and re-throws with LLM-actionable messages that include the errant state and the corrective next step (e.g., "call `start_task` first", "use `list_tasks` to inspect available IDs").
-- `ListTasksTool.invoke()` validates the optional `status` string against `Object.values(TaskStatus)` before forwarding to the service, surfacing bad enum values early with an explicit list of valid options.
-- JSDoc added to every exported class, constructor, `prepareInvocation`, and `invoke` per the skill requirements.
-- All imports use `.js` extensions as required by the NodeNext module system.
+### Step 1 – Interfaces & Tool Implementations
 
-### Step 1 Work Performed
-1. Created `src/tools/interfaces.ts` — defines `IListTasksParams`, `ICreateTaskParams`, `ITaskIdParams`.
-2. Created `src/tools/listTasksTool.ts` — wraps `TaskManager.listTasks()`, validates status enum, returns formatted task list.
-3. Created `src/tools/createTaskTool.ts` — wraps `TaskManager.createTask()`, validates non-empty ID, surfaces duplicate-ID guidance.
-4. Created `src/tools/activateTaskTool.ts` — wraps `TaskManager.activateTask()`.
-5. Created `src/tools/deactivateTaskTool.ts` — wraps `TaskManager.deactivateTask()`.
-6. Created `src/tools/startTaskTool.ts` — wraps `TaskManager.start_task()`, surfaces invalid state-transition guidance.
-7. Created `src/tools/closeTaskTool.ts` — wraps `TaskManager.close_task()`, surfaces invalid state-transition guidance.
-8. Ran `npm run compile` → **0 errors**.
-9. Ran `npm test` → **83/83 tests passing**.
+**Design Decisions:**
+- `ITaskIdParams` is shared across `activate_task`, `deactivate_task`, `start_task`, and `close_task` for schema consistency. `DeactivateTaskTool` accepts but ignores `taskId` at runtime since `TaskManager.deactivateTask()` takes no argument.
+- `ListTasksTool.invoke()` validates the optional `status` string against `Object.values(TaskStatus)` before forwarding to the service, surfacing bad enum values early with an explicit list of accepted values.
+- All error `catch` blocks re-throw with LLM-actionable messages: explanation of the failure state + corrective suggestion (e.g. "use `list_tasks` to find valid IDs", "call `start_task` first").
+- JSDoc on all exported classes, constructors, `prepareInvocation`, and `invoke` per the skill requirements.
+- All imports use `.js` extensions (NodeNext module system).
+
+### Step 2 – Unit Testing
+
+**Test structure (`src/test/tools/taskTools.test.ts`):**
+- One nested `suite()` per tool class.
+- Each suite covers: `invoke` happy path (result text content + actual state change on disk), `invoke` error cases (not-found, duplicate ID, invalid status string, invalid state transitions), and `prepareInvocation` confirmation message content.
+- Uses a real `TaskManager` backed by `fs.mkdtempSync` temp directories (same pattern as `taskManager.test.ts`) — no fake/stub for the service layer.
+- A stub `NEVER_TOKEN` satisfies the `vscode.CancellationToken` parameter shape.
+- A `firstTextPart()` helper extracts text from `LanguageModelToolResult.content[0]` for assertions.
 
 ## Output
 
-### New Files (Step 1)
-- `src/tools/interfaces.ts`
-- `src/tools/listTasksTool.ts`
-- `src/tools/createTaskTool.ts`
-- `src/tools/activateTaskTool.ts`
-- `src/tools/deactivateTaskTool.ts`
-- `src/tools/startTaskTool.ts`
-- `src/tools/closeTaskTool.ts`
+### New Files
+- `src/tools/interfaces.ts` — `IListTasksParams`, `ICreateTaskParams`, `ITaskIdParams`
+- `src/tools/listTasksTool.ts` — `ListTasksTool` (wraps `listTasks`, validates status enum)
+- `src/tools/createTaskTool.ts` — `CreateTaskTool` (wraps `createTask`, guards empty/duplicate IDs)
+- `src/tools/activateTaskTool.ts` — `ActivateTaskTool` (wraps `activateTask`)
+- `src/tools/deactivateTaskTool.ts` — `DeactivateTaskTool` (wraps `deactivateTask`)
+- `src/tools/startTaskTool.ts` — `StartTaskTool` (wraps `start_task`, open → in-progress)
+- `src/tools/closeTaskTool.ts` — `CloseTaskTool` (wraps `close_task`, in-progress → closed)
+- `src/test/tools/taskTools.test.ts` — 51 Mocha TDD tests
 
 ### Test Results
 ```
-83 passing (139ms)
+134 passing (212ms)   ← 83 pre-existing + 51 new
 ```
 
 ## Issues
 None
 
 ## Next Steps
-- **Step 2** (pending user confirmation): Create `src/test/tools/taskTools.test.ts` with Mocha TDD-style unit tests covering `invoke`, error handling, and `prepareInvocation` message content.
-- Run `npm run compile && npm test` after Step 2 to confirm all tests pass.
+None — task fully complete. Ready for Task 3.2 (Artifact Management Tools).
