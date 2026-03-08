@@ -16,6 +16,7 @@
     "languageModelTools": [
       {
         "name": "list_tasks",
+        "toolReferenceName": "list_tasks",
         "displayName": "List Tasks",
         "modelDescription": "Retrieve a list of tasks from the workspace. Use this when you need to see available tasks, check their status, or find a specific task ID to work on. You can optionally filter by status ('open', 'in-progress', 'closed'). Returns an array of task objects containing id, status, createdAt, and updatedAt.",
         "userDescription": "Lists tasks in the current workspace, optionally filtered by status.",
@@ -37,6 +38,7 @@
       },
       {
         "name": "create_task",
+        "toolReferenceName": "create_task",
         "displayName": "Create Task",
         "modelDescription": "Create a new task in the workspace. Use this when you are starting a new piece of work that requires tracking. The taskId must be a unique, URL-friendly string. Initial status will be 'open'. This tool creates the task entry in the index and the corresponding directory for artifacts.",
         "userDescription": "Creates a new task with a unique ID.",
@@ -56,6 +58,7 @@
       },
       {
         "name": "activate_task",
+        "toolReferenceName": "activate_task",
         "displayName": "Activate Task",
         "modelDescription": "Set a specific task as the 'active' task for the current workspace session. Use this so that subsequent artifact operations default to this task without needing to provide the taskId every time. Only one task can be active at a time.",
         "userDescription": "Sets a task as the active task for the workspace.",
@@ -75,6 +78,7 @@
       },
       {
         "name": "deactivate_task",
+        "toolReferenceName": "deactivate_task",
         "displayName": "Deactivate Task",
         "modelDescription": "Clear the currently active task. Use this when you are finished working on the active task but haven't necessarily closed it yet, or when switching context away from task management.",
         "userDescription": "Clears the currently active task.",
@@ -82,6 +86,7 @@
       },
       {
         "name": "start_task",
+        "toolReferenceName": "start_task",
         "displayName": "Start Task",
         "modelDescription": "Transition a task from 'open' to 'in-progress'. Use this when you actually begin working on a task. A task must be in 'open' status to be started. This is a primary state transition that signals active development.",
         "userDescription": "Moves a task from 'open' to 'in-progress' status.",
@@ -101,6 +106,7 @@
       },
       {
         "name": "close_task",
+        "toolReferenceName": "close_task",
         "displayName": "Close Task",
         "modelDescription": "Transition a task from 'in-progress' to 'closed'. Use this when all work and documentation (artifacts) for the task are complete. A task must be in 'in-progress' status to be closed. This is the final state in the task lifecycle.",
         "userDescription": "Moves a task from 'in-progress' to 'closed' status.",
@@ -120,6 +126,7 @@
       },
       {
         "name": "list_artifact_types",
+        "toolReferenceName": "list_artifact_types",
         "displayName": "List Artifact Types",
         "modelDescription": "List all registered artifact types and their associated templates. Use this to discover what kind of documentation you can create (e.g., 'implementation-plan', 'walkthrough'). Returns type IDs, display names, and descriptions.",
         "userDescription": "Lists all available artifact types and templates.",
@@ -127,6 +134,7 @@
       },
       {
         "name": "list_artifacts",
+        "toolReferenceName": "list_artifacts",
         "displayName": "List Artifacts",
         "modelDescription": "List artifact files associated with a specific task. If taskId is not provided, it defaults to the currently active task. Use this to see what documentation has already been created for a piece of work. Returns only artifacts that exist on disk.",
         "userDescription": "Lists artifacts for a specific task (defaults to active).",
@@ -143,6 +151,7 @@
       },
       {
         "name": "get_artifact",
+        "toolReferenceName": "get_artifact",
         "displayName": "Get Artifact",
         "modelDescription": "Retrieve the content of a specific artifact for a task. If the artifact file already exists, it returns the current content. If it doesn't exist, it returns the default template for that artifact type so you can fill it in. Defaults to active task if taskId is omitted.",
         "userDescription": "Reads an artifact's content or returns its template if it doesn't exist.",
@@ -166,6 +175,7 @@
       },
       {
         "name": "update_artifact",
+        "toolReferenceName": "update_artifact",
         "displayName": "Update Artifact",
         "modelDescription": "Create or overwrite an artifact file with new content. Use this to save your research, plans, or walkthroughs. The content should be the full Markdown body (no frontmatter). Defaults to active task if taskId is omitted.",
         "userDescription": "Creates or updates an artifact file with provided content.",
@@ -194,6 +204,7 @@
       },
       {
         "name": "register_artifact_type",
+        "toolReferenceName": "register_artifact_type",
         "displayName": "Register Artifact Type",
         "modelDescription": "Register a new custom artifact type and template at the workspace level. Use this when you need a standardized document structure that isn't provided by default. Custom types are saved to '.tasks/templates/' and are available immediately.",
         "userDescription": "Registers a new custom artifact type and template.",
@@ -233,7 +244,8 @@
     "watch": "tsc -watch -p ./",
     "pretest": "npm run compile && npm run lint",
     "lint": "eslint src --ext ts",
-    "test": "vscode-test"
+    "test": "vscode-test",
+    "package": "npx @vscode/vsce package"
   },
   "devDependencies": {
     "@types/js-yaml": "^4.0.9",
