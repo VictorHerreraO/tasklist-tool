@@ -1,6 +1,6 @@
 # Tasklist Tool – VS Code LM Extension - APM Implementation Plan
 **Memory Strategy:** Dynamic-MD
-**Last Modification:** Phase 2 complete. Phase 3 initiated; preparing Task 3.1.
+**Last Modification:** Phase 3 complete. Phase 4 initiated; preparing Task 4.1.
 **Project Overview:** Build a VS Code extension using the Language Model Tool API (TypeScript) that provides AI agents with structured task and artifact management. The extension exposes multiple LM tools enabling agents to create/manage tasks (with lifecycle states: open → in-progress → closed), track an active task, and create/read/update standardized artifacts (`.ai.md` files). The artifact registry uses a two-tier template system: built-in defaults bundled with the extension and custom workspace-level templates in `.tasks/templates/` that can be registered at runtime via an LM tool. Task state is persisted in a lightweight `.tasks/index.json` manifest at the workspace root, with artifacts stored in `.tasks/{task-id}/` directories.
 
 ## Phase 1: Project Scaffolding & Configuration
