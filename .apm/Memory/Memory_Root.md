@@ -29,3 +29,12 @@
 * Logs:
   * [Task 3.1 - Task Management Tools](file:///Users/victor.herrera/Workspace/tasklist-tool/.apm/Memory/Phase_03_LM_Tool_Implementations/Task_3_1_Implement_Task_Management_Tools.md)
   * [Task 3.2 - Artifact Management Tools](file:///Users/victor.herrera/Workspace/tasklist-tool/.apm/Memory/Phase_03_LM_Tool_Implementations/Task_3_2_Implement_Artifact_Management_Tools.md)
+
+## Phase 04 – Integration & Final Assembly Summary
+* Wired all 11 LM tools in `src/extension.ts` async `activate` with shared service instances and full lifecycle management via `context.subscriptions`.
+* Wrote 59 integration tests across 2 files covering full task and artifact lifecycles end-to-end with real disk-backed services, plus all error scenarios.
+* Final result: `npm run compile` clean, `npm test` **251/251 passing**. Extension fully assembled.
+* Involved Agent: Agent_Core
+* Logs:
+  * [Task 4.1 - Extension Entry Point](file:///Users/victor.herrera/Workspace/tasklist-tool/.apm/Memory/Phase_04_Integration_Final_Assembly/Task_4_1_Extension_Entry_Point_Tool_Registration.md)
+  * [Task 4.2 - Integration Testing](file:///Users/victor.herrera/Workspace/tasklist-tool/.apm/Memory/Phase_04_Integration_Final_Assembly/Task_4_2_Integration_Testing_Error_Scenarios.md)
