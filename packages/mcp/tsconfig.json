@@ -6,7 +6,6 @@
             "ES2022"
         ],
         "outDir": "out",
-        "rootDir": "src",
         "strict": true,
         "moduleResolution": "NodeNext",
         "esModuleInterop": true,
@@ -17,7 +16,8 @@
         "declarationMap": true
     },
     "include": [
-        "src/**/*"
+        "src/**/*",
+        "test/**/*"
     ],
     "exclude": [
         "node_modules",

@@ -13,7 +13,9 @@
         "watch": "tsc -watch -p ./",
         "start": "node out/index.js",
         "build": "tsc -p ./",
-        "dev": "tsx watch src/index.ts"
+        "dev": "tsx watch src/index.ts",
+        "pretest": "tsc -p ./",
+        "test": "mocha"
     },
     "engines": {
         "node": ">=18"
@@ -24,7 +26,9 @@
         "zod": "^3.23.8"
     },
     "devDependencies": {
+        "@types/mocha": "^10.0.10",
         "@types/node": "20.x",
+        "mocha": "^11.1.0",
         "tsx": "^4.19.2",
         "typescript": "^5.7.3"
     }
