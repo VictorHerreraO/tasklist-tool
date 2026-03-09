@@ -1,17 +1,31 @@
 {
     "name": "@tasklist/mcp",
     "version": "0.0.1",
-    "description": "MCP server implementation for Tasklist Tool",
+    "description": "MCP server for Tasklist Tool",
+    "type": "module",
     "main": "out/index.js",
     "types": "out/index.d.ts",
+    "bin": {
+        "tasklist-mcp": "./bin/tasklist-mcp"
+    },
     "scripts": {
         "compile": "tsc -p ./",
-        "watch": "tsc -watch -p ./"
+        "watch": "tsc -watch -p ./",
+        "start": "node out/index.js",
+        "build": "tsc -p ./",
+        "dev": "tsx watch src/index.ts"
+    },
+    "engines": {
+        "node": ">=18"
     },
     "dependencies": {
-        "@tasklist/core": "*"
+        "@modelcontextprotocol/sdk": "^1.6.1",
+        "@tasklist/core": "*",
+        "zod": "^3.23.8"
     },
     "devDependencies": {
+        "@types/node": "20.x",
+        "tsx": "^4.19.2",
         "typescript": "^5.7.3"
     }
 }

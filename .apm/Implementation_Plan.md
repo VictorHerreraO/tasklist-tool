@@ -1,6 +1,6 @@
 # Tasklist Tool – Project Restructuring & MCP Server - APM Implementation Plan
 **Memory Strategy:** Dynamic-MD
-**Last Modification:** Task 1.2 successfully completed; core logic extracted to `@tasklist/core`.
+**Last Modification:** Task 1.3 successfully completed; extension migrated and validated (251 tests passing). Phase 1 Complete.
 **Project Overview:** Restructure the existing VS Code extension (TypeScript) into a monorepo workspace to extract the core LM Tool logic into a shared package. Then, implement a new Node/TypeScript MCP Server providing 1-to-1 feature parity with the extension's task and artifact management capabilities. The plan concludes with testing the new server wrapper and validating the existing VS Code extension remains fully functional.
 
 ## Phase 1: Monorepo Restructuring & Core Extraction
@@ -8,6 +8,7 @@
 - **Objective:** Convert the current repository into an npm workspace and create the foundational package structures.
 - **Output:** `package.json` with `workspaces` array, new `packages/core`, `packages/extension`, and `packages/mcp` directories with their respective `package.json` and `tsconfig.json` files.
 - **Guidance:** Ensure the root `package.json` correctly defines the workspaces. Move the VS Code engine constraints and extension dependencies into `packages/extension`.
+- **Depends on:** Plan creation
 
 ### Task 1.2 – Extract Core Logic - Agent_Core [COMPLETED]
 - **Objective:** Move `TaskManager`, `ArtifactRegistry`, `ArtifactService`, models, and templates into `packages/core`.
@@ -15,7 +16,7 @@
 - **Guidance:** Re-write or abstract any direct `vscode` API dependencies in the core tools to allow them to be consumed by non-VS Code environments (like the MCP server).
 - **Depends on:** Task 1.1 Output
 
-### Task 1.3 – Migrate Extension and Validate - Agent_Extension
+### Task 1.3 – Migrate Extension and Validate - Agent_Extension [COMPLETED]
 - **Objective:** Migrate the extension's entry point and VS Code-specific tool wrappers into `packages/extension`, updating imports to use `packages/core`.
 - **Output:** The VS Code extension successfully building and all 251 existing tests passing.
 - **Guidance:** Update all integration tests to run against the newly structured packages. **Crucial validation step:** The extension must function identically to before the restructure.
