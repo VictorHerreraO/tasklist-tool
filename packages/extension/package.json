@@ -256,7 +256,7 @@
         "@tasklist/core": "*"
     },
     "devDependencies": {
-        "esbuild": "^0.25.0",
+        "esbuild": "^0.27.3",
         "@types/vscode": "^1.100.0",
         "@vscode/test-cli": "^0.0.10",
         "@vscode/test-electron": "^2.4.1",
