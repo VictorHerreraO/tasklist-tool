@@ -1,10 +1,10 @@
 # Tasklist Tool – Project Restructuring & MCP Server - APM Implementation Plan
 **Memory Strategy:** Dynamic-MD
-**Last Modification:** Plan creation by the Setup Agent.
+**Last Modification:** Task 1.1 successfully completed; repository converted to monorepo.
 **Project Overview:** Restructure the existing VS Code extension (TypeScript) into a monorepo workspace to extract the core LM Tool logic into a shared package. Then, implement a new Node/TypeScript MCP Server providing 1-to-1 feature parity with the extension's task and artifact management capabilities. The plan concludes with testing the new server wrapper and validating the existing VS Code extension remains fully functional.
 
 ## Phase 1: Monorepo Restructuring & Core Extraction
-### Task 1.1 – Setup Workspace and Base Packages - Agent_Core
+### Task 1.1 – Setup Workspace and Base Packages - Agent_Core [COMPLETED]
 - **Objective:** Convert the current repository into an npm workspace and create the foundational package structures.
 - **Output:** `package.json` with `workspaces` array, new `packages/core`, `packages/extension`, and `packages/mcp` directories with their respective `package.json` and `tsconfig.json` files.
 - **Guidance:** Ensure the root `package.json` correctly defines the workspaces. Move the VS Code engine constraints and extension dependencies into `packages/extension`.

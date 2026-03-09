@@ -1,0 +1,17 @@
+{
+    "name": "@tasklist/mcp",
+    "version": "0.0.1",
+    "description": "MCP server implementation for Tasklist Tool",
+    "main": "out/index.js",
+    "types": "out/index.d.ts",
+    "scripts": {
+        "compile": "tsc -p ./",
+        "watch": "tsc -watch -p ./"
+    },
+    "dependencies": {
+        "@tasklist/core": "*"
+    },
+    "devDependencies": {
+        "typescript": "^5.7.3"
+    }
+}
