@@ -12,9 +12,32 @@
 
 import { TaskManager, ArtifactRegistry, ArtifactService } from '@tasklist/core';
 
+/**
+ * Resolves the workspace root from the TASKLIST_WORKSPACE environment variable.
+ *
+ * This is a STRICT REQUIREMENT. The MCP server will not start without this
+ * variable set, ensuring it always operates on a valid, intentional path.
+ *
+ * @throws {Error} If TASKLIST_WORKSPACE is not set.
+ */
+function resolveWorkspaceRoot(): string {
+    const envRoot = process.env['TASKLIST_WORKSPACE'];
+
+    if (!envRoot) {
+        throw new Error(
+            'Missing TASKLIST_WORKSPACE environment variable. ' +
+            'The Tasklist MCP server requires this variable to be set to the absolute path ' +
+            'of the project workspace it should manage.\n\n' +
+            'Example for shell:\n  export TASKLIST_WORKSPACE=$(pwd)\n\n' +
+            'Example for Claude Desktop config:\n  "env": { "TASKLIST_WORKSPACE": "/path/to/project" }'
+        );
+    }
+
+    return envRoot;
+}
+
 /** Absolute path to the workspace root that all services operate on. */
-export const workspaceRoot: string =
-    process.env['TASKLIST_WORKSPACE'] ?? process.cwd();
+export const workspaceRoot: string = resolveWorkspaceRoot();
 
 /** Handles all task lifecycle operations (create, list, start, close, etc.). */
 export const taskManager = new TaskManager(workspaceRoot);
