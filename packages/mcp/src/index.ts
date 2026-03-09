@@ -1,40 +1,35 @@
 #!/usr/bin/env node
 /**
- * MCP Server for Tasklist Tool.
+ * MCP Server for Tasklist Tool — entry point.
  *
- * This server exposes Tasklist Tool functionality (task management and artifact
- * tracking) to LLM clients via the Model Context Protocol (MCP) over STDIO.
+ * This module is the orchestrator:
+ *   1. Imports tool modules (side effects) so all tools are registered on
+ *      the shared `server` instance before the transport connects.
+ *   2. Connects the server to a StdioServerTransport and starts listening.
  *
- * Tools are registered in subsequent tasks. This file provides the base server
- * infrastructure and startup logic.
+ * Tool registrations live in:
+ *   - src/tools/tasks.ts     (list_tasks, create_task, activate_task,
+ *                             deactivate_task, start_task, close_task)
+ *   - src/tools/artifacts.ts (list_artifacts, get_artifact, update_artifact,
+ *                             list_artifact_types, register_artifact_type)
+ *
+ * Workspace root is resolved in src/workspaceRoot.ts from the
+ * TASKLIST_WORKSPACE environment variable or process.cwd().
  */
 
-import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import { server } from './server.js';
 
-// ---------------------------------------------------------------------------
-// Server Initialization
-// ---------------------------------------------------------------------------
+// ── Side-effect imports — register all tools before connecting ────────────────
+import './tools/tasks.js';
+import './tools/artifacts.js';
 
-/**
- * The core MCP server instance.
- *
- * Tools (registered in Task 2.2+) will call `server.registerTool()` on this
- * instance before the server connects to its transport.
- */
-export const server = new McpServer({
-    name: 'tasklist-mcp-server',
-    version: '0.0.1',
-});
-
-// ---------------------------------------------------------------------------
-// Transport – STDIO (for use with local MCP clients, e.g. Claude Desktop)
-// ---------------------------------------------------------------------------
+// ─── Transport ───────────────────────────────────────────────────────────────
 
 async function main(): Promise<void> {
     const transport = new StdioServerTransport();
     await server.connect(transport);
-    // Log to stderr so it does not pollute the STDIO protocol channel
+    // Log to stderr so it does not pollute the STDIO protocol channel.
     process.stderr.write('tasklist-mcp-server is running via stdio\n');
 }
 

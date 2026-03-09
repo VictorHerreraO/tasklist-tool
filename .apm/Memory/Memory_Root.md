@@ -14,7 +14,15 @@
   * [Task 1.3 - Migrate Extension and Validate](file:///Users/victor.herrera/Workspace/tasklist-tool/.apm/Memory/Phase_01_Monorepo_Core_Extraction/Task_1_3_Migrate_Extension_and_Validate.md)
 
 ## Phase 02 – MCP Server Implementation Summary
-[To be filled after Phase 2 completion]
+* Scaffolded `packages/mcp` as ESM with `@modelcontextprotocol/sdk ^1.6.1`, `zod`, and `STDIO` transport via `McpServer` + `StdioServerTransport`.
+* Implemented a clean 3-module structure: `server.ts` (singleton), `workspaceRoot.ts` (service instances resolved from `TASKLIST_WORKSPACE` env var), and `src/tools/` (side-effect registrations).
+* Registered all 11 MCP tools (6 task lifecycle + 5 artifact management) with full `zod` input schemas, active-task fallback on optional `taskId` args, and actionable LLM-friendly error messages.
+* Identified `ArtifactRegistry.extensionRoot` API quirk (constructor arg unused in `initialize()`); documented and safely worked around.
+* Build status: `npm run compile` clean; runtime smoke test confirmed server starts over STDIO.
+* Involved Agent: Agent_MCP
+* Logs:
+  * [Task 2.1 - MCP Server Scaffolding](file:///Users/victor.herrera/Workspace/tasklist-tool/.apm/Memory/Phase_02_MCP_Server_Implementation/Task_2_1_MCP_Server_Scaffolding.md)
+  * [Task 2.2 - Implement MCP Tool Wrappers](file:///Users/victor.herrera/Workspace/tasklist-tool/.apm/Memory/Phase_02_MCP_Server_Implementation/Task_2_2_Implement_MCP_Tool_Wrappers.md)
 
 ## Phase 03 – Final Testing & Execution Scripting Summary
 [To be filled after Phase 3 completion]

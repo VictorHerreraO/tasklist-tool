@@ -1,6 +1,6 @@
 # Tasklist Tool – Project Restructuring & MCP Server - APM Implementation Plan
 **Memory Strategy:** Dynamic-MD
-**Last Modification:** Task 1.3 successfully completed; extension migrated and validated (251 tests passing). Phase 1 Complete.
+**Last Modification:** Task 2.2 completed; all 11 MCP tool wrappers implemented (6 task + 5 artifact). Phase 2 Complete.
 **Project Overview:** Restructure the existing VS Code extension (TypeScript) into a monorepo workspace to extract the core LM Tool logic into a shared package. Then, implement a new Node/TypeScript MCP Server providing 1-to-1 feature parity with the extension's task and artifact management capabilities. The plan concludes with testing the new server wrapper and validating the existing VS Code extension remains fully functional.
 
 ## Phase 1: Monorepo Restructuring & Core Extraction
@@ -23,13 +23,13 @@
 - **Depends on:** Task 1.2 Output by Agent_Core
 
 ## Phase 2: MCP Server Implementation
-### Task 2.1 – MCP Server Scaffolding - Agent_MCP
+### Task 2.1 – MCP Server Scaffolding - Agent_MCP [COMPLETED]
 - **Objective:** Initialize the MCP server structure within `packages/mcp` using `@modelcontextprotocol/sdk`.
 - **Output:** Basic MCP server setup with STDIO transport, ready to register tools.
 - **Guidance:** Follow the guidelines from the `mcp-builder` skill. Set up the `package.json` with a dedicated execution script (e.g., `bin/tasklist-mcp`).
 - **Depends on:** Task 1.3 Output by Agent_Extension
 
-### Task 2.2 – Implement MCP Tool Wrappers - Agent_MCP
+### Task 2.2 – Implement MCP Tool Wrappers - Agent_MCP [COMPLETED]
 - **Objective:** Map the 11 core LM Tools from `packages/core` to MCP tool registrations.
 - **Output:** `packages/mcp/src/index.ts` (or similar) with all tools registered, complete with Input/Output schemas and full descriptions matching the feature parity of the VS Code extension.
 - **Guidance:** Ensure tools resolve the workspace context correctly (executing in the current repository where the agent is running).
