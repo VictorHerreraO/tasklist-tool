@@ -30,7 +30,7 @@ jobs:
 
       - name: Get VSIX file name
         id: vsix_file
-        run: echo "filename=$(ls *.vsix)" >> $GITHUB_OUTPUT
+        run: echo "filename=$(ls packages/extension/*.vsix)" >> $GITHUB_OUTPUT
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
