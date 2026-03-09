@@ -1,6 +1,6 @@
 {
     "name": "@tasklist/core",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "description": "Core logic for Tasklist Tool",
     "main": "out/index.js",
     "types": "out/index.d.ts",
