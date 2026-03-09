@@ -1,6 +1,5 @@
 import * as vscode from 'vscode';
-import { TaskManager } from '../services/taskManager.js';
-import { TaskStatus } from '../models/task.js';
+import { TaskManager, TaskStatus } from '@tasklist/core';
 import { IListTasksParams } from './interfaces.js';
 
 /**

@@ -2,8 +2,7 @@ import * as assert from 'assert';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
-import { ArtifactRegistry } from '../../services/artifactRegistry.js';
-import { ArtifactType } from '../../models/artifact.js';
+import { ArtifactRegistry, ArtifactType } from '@tasklist/core';
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 

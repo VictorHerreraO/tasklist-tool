@@ -3,7 +3,7 @@ import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 import * as vscode from 'vscode';
-import { TaskManager } from '../../services/taskManager.js';
+import { TaskManager } from '@tasklist/core';
 import { ListTasksTool } from '../../tools/listTasksTool.js';
 import { CreateTaskTool } from '../../tools/createTaskTool.js';
 import { ActivateTaskTool } from '../../tools/activateTaskTool.js';

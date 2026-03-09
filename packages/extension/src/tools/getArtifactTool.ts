@@ -1,6 +1,5 @@
 import * as vscode from 'vscode';
-import { TaskManager } from '../services/taskManager.js';
-import { ArtifactService } from '../services/artifactService.js';
+import { TaskManager, ArtifactService } from '@tasklist/core';
 import { IGetArtifactParams } from './interfaces.js';
 
 /**

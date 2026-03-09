@@ -141,7 +141,7 @@ export class ArtifactRegistry {
         this._types.clear();
 
         // Tier 1: built-in bundled templates.
-        const builtInDir = path.join(this.extensionRoot, 'src', 'templates');
+        const builtInDir = path.join(__dirname, '..', 'templates');
         for (const type of loadTemplatesFromDir(builtInDir)) {
             this._types.set(type.id, type);
         }

@@ -2,9 +2,7 @@ import * as assert from 'assert';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
-import { ArtifactService } from '../../services/artifactService.js';
-import { ArtifactRegistry } from '../../services/artifactRegistry.js';
-import { TaskManager } from '../../services/taskManager.js';
+import { ArtifactService, ArtifactRegistry, TaskManager } from '@tasklist/core';
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 

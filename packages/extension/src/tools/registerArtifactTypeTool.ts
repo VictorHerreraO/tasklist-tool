@@ -1,6 +1,5 @@
 import * as vscode from 'vscode';
-import { ArtifactRegistry } from '../services/artifactRegistry.js';
-import { ArtifactType } from '../models/artifact.js';
+import { ArtifactRegistry, ArtifactType } from '@tasklist/core';
 import { IRegisterArtifactTypeParams } from './interfaces.js';
 
 /**

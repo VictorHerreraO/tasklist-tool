@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { TaskManager } from '../services/taskManager.js';
+import { TaskManager } from '@tasklist/core';
 import { ICreateTaskParams } from './interfaces.js';
 
 /**

@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { ArtifactRegistry } from '../services/artifactRegistry.js';
+import { ArtifactRegistry } from '@tasklist/core';
 
 /**
  * Language model tool that lists all registered artifact types.

@@ -1,7 +1,5 @@
 import * as vscode from 'vscode';
-import { TaskManager } from './services/taskManager.js';
-import { ArtifactRegistry } from './services/artifactRegistry.js';
-import { ArtifactService } from './services/artifactService.js';
+import { TaskManager, ArtifactRegistry, ArtifactService } from '@tasklist/core';
 import { ListTasksTool } from './tools/listTasksTool.js';
 import { CreateTaskTool } from './tools/createTaskTool.js';
 import { ActivateTaskTool } from './tools/activateTaskTool.js';

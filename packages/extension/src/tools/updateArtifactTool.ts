@@ -1,13 +1,12 @@
 import * as vscode from 'vscode';
-import { TaskManager } from '../services/taskManager.js';
-import { ArtifactService } from '../services/artifactService.js';
-import { IListArtifactsParams } from './interfaces.js';
+import { TaskManager, ArtifactService } from '@tasklist/core';
+import { IUpdateArtifactParams } from './interfaces.js';
 
 /**
- * Language model tool that lists all artifacts for a given task.
+ * Language model tool that creates or overwrites an artifact file for a task.
  *
- * For every registered artifact type the tool reports whether the corresponding
- * file already exists on disk (`✔`) or is only available as a template (`○`).
+ * Writes the provided Markdown content to `.tasks/{taskId}/{filename}`. If the
+ * file does not yet exist it is created; if it does it is fully replaced.
  *
  * The `taskId` is resolved in this order:
  * 1. `options.input.taskId` (explicit)
@@ -15,13 +14,13 @@ import { IListArtifactsParams } from './interfaces.js';
  *
  * If neither is available the tool throws an LLM-friendly error.
  *
- * Implements `vscode.LanguageModelTool<IListArtifactsParams>`.
+ * Implements `vscode.LanguageModelTool<IUpdateArtifactParams>`.
  */
-export class ListArtifactsTool implements vscode.LanguageModelTool<IListArtifactsParams> {
+export class UpdateArtifactTool implements vscode.LanguageModelTool<IUpdateArtifactParams> {
     /** Used to resolve the active task when no explicit taskId is provided. */
     private readonly taskManager: TaskManager;
 
-    /** Core I/O service for artifact file inspection. */
+    /** Core I/O service for artifact file writes. */
     private readonly artifactService: ArtifactService;
 
     /**
@@ -62,61 +61,64 @@ export class ListArtifactsTool implements vscode.LanguageModelTool<IListArtifact
      * @returns Confirmation metadata for the VS Code tool-calling UI.
      */
     async prepareInvocation(
-        options: vscode.LanguageModelToolInvocationPrepareOptions<IListArtifactsParams>,
+        options: vscode.LanguageModelToolInvocationPrepareOptions<IUpdateArtifactParams>,
         _token: vscode.CancellationToken
     ): Promise<vscode.PreparedToolInvocation> {
-        const taskLabel = options.input.taskId ?? 'the active task';
+        const { artifactType, taskId } = options.input;
+        const taskLabel = taskId ?? 'the active task';
         return {
-            invocationMessage: `Listing artifacts for ${taskLabel}`,
+            invocationMessage: `Saving '${artifactType}' artifact for ${taskLabel}`,
             confirmationMessages: {
-                title: 'List Artifacts',
+                title: 'Update Artifact',
                 message: new vscode.MarkdownString(
-                    `List all artifact types and their on-disk status for task \`${taskLabel}\`.`
+                    `Write (create or overwrite) the \`${artifactType}\` artifact ` +
+                    `for task \`${taskLabel}\`. **This will replace any existing file content.**`
                 ),
             },
         };
     }
 
     /**
-     * Invokes the tool: lists all artifact types and their on-disk status for
-     * the resolved task.
+     * Invokes the tool: persists the artifact content to disk.
      *
      * @param options - Invocation options containing the validated input.
      * @param _token - Cancellation token (unused here).
-     * @returns A `LanguageModelToolResult` with a formatted artifact status list.
-     * @throws {Error} If no taskId can be resolved, or the task does not exist.
+     * @returns A `LanguageModelToolResult` confirming the write with task and type.
+     * @throws {Error} If no taskId can be resolved, the task does not exist, or
+     *   the artifact type is not registered.
      */
     async invoke(
-        options: vscode.LanguageModelToolInvocationOptions<IListArtifactsParams>,
+        options: vscode.LanguageModelToolInvocationOptions<IUpdateArtifactParams>,
         _token: vscode.CancellationToken
     ): Promise<vscode.LanguageModelToolResult> {
+        const { artifactType, content } = options.input;
         const taskId = this.resolveTaskId(options.input.taskId);
 
         try {
-            const infos = this.artifactService.listArtifacts(taskId);
-
-            const lines = infos.map(
-                info =>
-                    `${info.exists ? '✔' : '○'} **${info.type.id}** (${info.type.filename}) — ${info.exists ? 'exists on disk' : 'template only'}`
-            );
-
+            this.artifactService.updateArtifact(taskId, artifactType, content);
             return new vscode.LanguageModelToolResult([
                 new vscode.LanguageModelTextPart(
-                    `Artifacts for task '${taskId}':\n\n${lines.join('\n')}\n\n` +
-                    `✔ = file saved on disk | ○ = template available, no file yet`
+                    `Artifact '${artifactType}' for task '${taskId}' has been saved successfully.`
                 ),
             ]);
         } catch (err: unknown) {
             const message = err instanceof Error ? err.message : String(err);
+
             if (message.includes('not found')) {
                 throw new Error(
-                    `Task '${taskId}' not found. ` +
-                    `Use 'list_tasks' to see available tasks, then retry with a valid taskId.`
+                    `Cannot update artifact: task '${taskId}' not found. ` +
+                    `Use 'list_tasks' to find valid task IDs or 'create_task' to create a new one.`
+                );
+            }
+            if (message.includes('Unknown artifact type')) {
+                throw new Error(
+                    `Unknown artifact type '${artifactType}'. ` +
+                    `Use 'list_artifact_types' to see valid types, then retry with a correct artifactType.`
                 );
             }
             throw new Error(
-                `Failed to list artifacts for task '${taskId}': ${message}. ` +
-                `Ensure the workspace is accessible and the task exists.`
+                `Failed to update artifact '${artifactType}' for task '${taskId}': ${message}. ` +
+                `Ensure the workspace is writable and the task and artifact type both exist.`
             );
         }
     }

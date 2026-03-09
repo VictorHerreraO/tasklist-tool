@@ -2,8 +2,7 @@ import * as assert from 'assert';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
-import { TaskManager } from '../../services/taskManager.js';
-import { TaskStatus } from '../../models/task.js';
+import { TaskManager, TaskStatus } from '@tasklist/core';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
