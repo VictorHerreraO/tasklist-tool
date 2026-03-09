@@ -2,8 +2,12 @@
     "name": "tasklist-tool",
     "displayName": "Tasklist Tool",
     "description": "A VS Code extension for structured task and artifact management for AI agents.",
-    "version": "0.0.1",
+    "version": "0.1.0",
     "publisher": "local",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/VictorHerreraO/tasklist-tool.git"
+    },
     "engines": {
         "vscode": "^1.100.0"
     },
@@ -239,18 +243,20 @@
         ]
     },
     "scripts": {
-        "vscode:prepublish": "npm run compile",
+        "vscode:prepublish": "npm run bundle",
         "compile": "tsc -p ./",
         "watch": "tsc -watch -p ./",
         "pretest": "npm run compile && npm run lint",
         "lint": "eslint src --ext ts",
         "test": "vscode-test",
-        "package": "npx @vscode/vsce package"
+        "bundle": "esbuild src/extension.ts --bundle --outfile=out/extension.js --external:vscode --platform=node --target=node20",
+        "package": "npx @vscode/vsce package --no-dependencies"
     },
     "dependencies": {
         "@tasklist/core": "*"
     },
     "devDependencies": {
+        "esbuild": "^0.25.0",
         "@types/vscode": "^1.100.0",
         "@vscode/test-cli": "^0.0.10",
         "@vscode/test-electron": "^2.4.1",

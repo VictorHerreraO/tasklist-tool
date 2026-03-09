@@ -28,10 +28,14 @@
 * Handlers for tasks and artifacts were extracted to pure functions (`src/handlers/`), allowing clean isolation testing.
 * Test suite configured using Mocha (with TDD UI), resulting in 68 passing tests simulating all 11 MCP tool operations smoothly.
 * TypeScript configs (`tsconfig.json`) and MCP execution paths (`bin` entry, `package.json` main/types exports) were finalized given `rootDir` adjustments.
+* Integrated `esbuild` in `packages/extension` to bundle dependencies, resolving `EISDIR` errors during packaging and optimizing extension bundle size.
+* Configured `.vscodeignore` and added missing `repository` manifests to satisfy `vsce` validation.
+* Created a symbolic link for `LICENSE` in the extension package to maintain a single source of truth.
 * Clean full monorepo build confirmed: `npm run compile --workspaces`.
 * Full test suite across monorepo tested completely effectively: 319 passing tests in total.
 * Bootured integration smoke test over STDIO confirmed successful setup for external consumption via `tasklist-mcp-server`.
-* Involved Agents: Agent_MCP, Agent_Core
+* Involved Agents: Agent_MCP, Agent_Core, Agent_AdHoc_Debug
 * Logs:
   * [Task 3.1 - MCP Server Testing](file:///Users/victor.herrera/Workspace/tasklist-tool/.apm/Memory/Phase_03_Final_Testing_Execution_Scripting/Task_3_1_MCP_Server_Testing.md)
   * [Task 3.2 - Execution Script Finalization & Verification](file:///Users/victor.herrera/Workspace/tasklist-tool/.apm/Memory/Phase_03_Final_Testing_Execution_Scripting/Task_3_2_Execution_Script_Finalization_Verification.md)
+  * [Ad-Hoc - Fix VSCE Packaging](file:///Users/victor.herrera/Workspace/tasklist-tool/.apm/Memory/AdHoc_Fix_VSCE_Packaging.md)

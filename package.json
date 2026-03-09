@@ -1,8 +1,12 @@
 {
   "name": "tasklist-tool-monorepo",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "private": true,
   "description": "Monorepo for Tasklist Tool",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/VictorHerreraO/tasklist-tool.git"
+  },
   "workspaces": [
     "packages/*"
   ],
