@@ -3,15 +3,15 @@
     "version": "0.0.1",
     "description": "MCP server for Tasklist Tool",
     "type": "module",
-    "main": "out/index.js",
-    "types": "out/index.d.ts",
+    "main": "out/src/index.js",
+    "types": "out/src/index.d.ts",
     "bin": {
         "tasklist-mcp": "./bin/tasklist-mcp"
     },
     "scripts": {
         "compile": "tsc -p ./",
         "watch": "tsc -watch -p ./",
-        "start": "node out/index.js",
+        "start": "node out/src/index.js",
         "build": "tsc -p ./",
         "dev": "tsx watch src/index.ts",
         "pretest": "tsc -p ./",
