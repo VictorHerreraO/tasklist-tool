@@ -1,65 +1,84 @@
 # Tasklist Tool
 
-A VS Code extension designed for structured task and artifact management, primarily optimized for use by AI agents within the VS Code environment.
+A suite of tools designed for structured task and artifact management, perfectly optimized for use by AI agents. This repository contains both a **VS Code extension** and a **Model Context Protocol (MCP) Server**, sharing the same underlying robust logic.
 
 ## Overview
 
-The Tasklist Tool provides a robust framework for tracking development progress and maintaining structured documentation (artifacts). By using Language Model Tools, AI agents can interactively manage tasks and generate documentation based on predefined templates.
+The Tasklist Tool provides a framework for tracking development progress and maintaining structured documentation (artifacts) alongside code. By exposing Language Model Tools, AI agents can interactively manage tasks, state, and generate documentation using standard templates without requiring manual developer involvement.
+
+### Repository Structure
+This project is structured as a **monorepo** consisting of three npm packages:
+
+- `@tasklist/core` (`packages/core/`): Shared business logic, task models, and Markdown template engine.
+- `tasklist-tool` (`packages/extension/`): The VS Code extension wrapper.
+- `@tasklist/mcp` (`packages/mcp/`): The standalone Model Context Protocol server.
 
 ## Key Features
 
-- **Structured Task Management**: Create, start, and close tasks with unique identifiers.
-- **Active Task Context**: Set an "active" task to simplify subsequent operations.
+- **Structured Task Management**: Create, start, and close tasks with unique tracking identifiers.
+- **Active Task Context**: Set an "active" task to simplify subsequent operations and focus an agent's workflow.
 - **Artifact Management**: Generate and update documentation artifacts (e.g., implementation plans, research notes, walkthroughs).
-- **Template System**: Use YAML-based templates to ensure consistent documentation structure.
-- **Custom Artifact Types**: Register new artifact types and templates at the workspace level.
+- **Template System**: Use YAML-based templates to ensure consistently structured documentation generation.
+- **Custom Artifact Types**: Register new artifact types at the workspace level for unique domains.
 
-## Tech Stack
+## Available Agent Tools
 
-- **TypeScript**: Core language for development.
-- **VS Code Extension API**: Integration with the VS Code ecosystem.
-- **Mocha & VS Code Test API**: Comprehensive suite for unit, service, and integration testing.
-- **js-yaml**: Parsing and handling structured template data.
+Both the VS Code Extension and the MCP Server expose the exact same **11 core tools**:
+
+### Task Lifecycle Tools
+- `list_tasks`: Retrieve tasks from the workspace.
+- `create_task`: Initialize a new task entry.
+- `activate_task`: Set the current focus task.
+- `deactivate_task`: Clear the active focus task.
+- `start_task`: Transition a task to in-progress.
+- `close_task`: Transition an in-progress task to closed.
+
+### Artifact Management Tools
+- `list_artifact_types`: Discover available documentation structures.
+- `register_artifact_type`: Create custom documentation templates.
+- `list_artifacts`: Show populated and available artifacts per task.
+- `get_artifact`: Retrieve documentation structure or content.
+- `update_artifact`: Write finished documentation for a task.
 
 ## Getting Started
 
 ### Installation
+1. Clone the repository and open it in your terminal.
+2. Run `npm install` at the root folder to pull dependencies and link the workspaces.
+3. Run `npm run compile` to build the entire monorepo (`core`, `extension`, and `mcp`).
 
-1. Open the project in VS Code.
-2. Run `npm install` to install dependencies.
-3. Run `npm run compile` to build the extension.
-4. Press `F5` to open a new VS Code window with the extension loaded.
+### Using the MCP Server
 
-### Available Tools (for AI Agents)
+The standalone Model Context Protocol server operates over `stdio` and allows any MCP-compatible agent Client to manage your tasklist.
 
-The extension contributes several Language Model Tools:
+To boot the server on a project, set the `TASKLIST_WORKSPACE` environment variable to point to the repository the agent should manage, and run the binary:
 
-- `list_tasks`: Retrieve tasks from the workspace.
-- `create_task`: Initialize a new task entry.
-- `activate_task`: Set the current focus task.
-- `start_task` / `close_task`: Manage task lifecycle transitions.
-- `list_artifact_types`: Discover available documentation structures.
-- `get_artifact` / `update_artifact`: Read or write documentation for a task.
-- `register_artifact_type`: Create custom documentation templates.
+```bash
+export TASKLIST_WORKSPACE=/path/to/your/project
+npx tasklist-mcp
+```
+*(Alternatively, execute `node packages/mcp/bin/tasklist-mcp` directly).*
 
-## Project Structure
+### Running the VS Code Extension
 
-- `src/extension.ts`: Main entry point and tool registration.
-- `src/tools/`: Implementation of individual Language Model Tools.
-- `src/services/`: Core business logic (`TaskManager`, `ArtifactService`, `ArtifactRegistry`).
-- `src/models/`: TypeScript interfaces and data models.
-- `src/templates/`: Default Markdown templates for various artifact types.
-- `src/test/`: Integration and unit tests.
+1. After `npm install` and `npm run compile`, open the repository in VS Code.
+2. Press `F5` to open a new VS Code development window with the extension loaded.
 
 ## Development Workflows
 
-| Action                       | Command           |
-| ---------------------------- | ----------------- |
-| **Compile**                  | `npm run compile` |
-| **Watch (Continuous Build)** | `npm run watch`   |
-| **Lint**                     | `npm run lint`    |
-| **Run Tests**                | `npm run test`    |
-| **Package extension**        | `npm run package` |
+| Action                        | Command (from root) |
+| ----------------------------- | ------------------- |
+| **Compile All**               | `npm run compile`   |
+| **Watch (Continuous Build)**  | `npm run watch`     |
+| **Lint**                      | `npm run lint`      |
+| **Run All Tests**             | `npm run test`      |
+| **Package VS Code Extension** | `npm run package`   |
+
+> **Note:** The `npm run package` command compiles the extension via `vsce` internally, and the built `.vsix` wrapper will be produced inside `packages/extension/`.
+
+### GitHub Actions (CI/CD)
+The project includes automated pipelines configured in `.github/workflows/`.
+Pushes matched to `v*` tags will automatically run `npm run package` on the workspace and publish a GitHub Release with the bundled `.vsix` file attached.
 
 ## License
 
