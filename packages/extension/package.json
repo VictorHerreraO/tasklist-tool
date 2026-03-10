@@ -249,8 +249,9 @@
     "pretest": "npm run compile && npm run lint",
     "lint": "eslint src --ext ts",
     "test": "vscode-test",
-    "bundle": "mkdir -p templates && cp -r ../core/src/templates/* templates/ && esbuild src/extension.ts --bundle --outfile=out/extension.js --external:vscode --platform=node --target=node20",
-    "package": "npx @vscode/vsce package --no-dependencies"
+    "bundle": "mkdir -p templates && cp -r ../core/src/templates/* templates/ && cp ../../README.md . && esbuild src/extension.ts --bundle --outfile=out/extension.js --external:vscode --platform=node --target=node20",
+    "package": "npx @vscode/vsce package --no-dependencies",
+    "postpackage": "rm -rf templates README.md"
   },
   "dependencies": {
     "@tasklist/core": "*"
