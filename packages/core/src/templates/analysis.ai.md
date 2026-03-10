@@ -1,21 +1,21 @@
 ---
-id: research
-displayName: Research Notes
-description: Findings, comparisons, and conclusions from technical research related to a task.
-filename: research.ai.md
+id: analysis
+displayName: Analysis Notes
+description: Findings, comparisons, and conclusions from technical analysis related to a task. Use this template when researching or analyzing options, patterns, or problems. Document sources, findings, considered options, and recommendations.
+filename: analysis.ai.md
 ---
 
-# Research Notes
+# Analysis Notes
 
 ## Topic
-<!-- State the research question or problem being investigated. -->
+<!-- State the analysis question or problem being investigated. -->
 
 ## Sources Consulted
 <!-- List URLs, documentation pages, papers, or codebases reviewed. -->
 - 
 
 ## Key Findings
-<!-- Summarise the most important discoveries. -->
+<!-- Summarise the most important findings. -->
 
 ## Options Considered
 <!-- Compare approaches, libraries, or patterns evaluated. -->

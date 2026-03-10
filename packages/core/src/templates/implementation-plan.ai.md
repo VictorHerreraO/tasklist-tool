@@ -1,7 +1,7 @@
 ---
 id: implementation-plan
 displayName: Implementation Plan
-description: Step-by-step technical plan outlining how a task will be implemented.
+description: Step-by-step technical plan outlining how a task will be implemented. Use this template during the PLANNING phase before writing code. Document architecture, specific steps, file modifications, and testing strategy for user approval.
 filename: implementation-plan.ai.md
 ---
 
