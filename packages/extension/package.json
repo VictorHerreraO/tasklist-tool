@@ -249,7 +249,7 @@
         "pretest": "npm run compile && npm run lint",
         "lint": "eslint src --ext ts",
         "test": "vscode-test",
-        "bundle": "esbuild src/extension.ts --bundle --outfile=out/extension.js --external:vscode --platform=node --target=node20",
+        "bundle": "mkdir -p templates && cp -r ../core/src/templates/* templates/ && esbuild src/extension.ts --bundle --outfile=out/extension.js --external:vscode --platform=node --target=node20",
         "package": "npx @vscode/vsce package --no-dependencies"
     },
     "dependencies": {

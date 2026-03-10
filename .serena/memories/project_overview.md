@@ -15,5 +15,5 @@ The Tasklist Tool is a VS Code extension designed to provide structured task and
     - `artifactService.ts`: Manages artifact file I/O.
     - `artifactRegistry.ts`: Manages artifact types and templates.
 - `src/models/`: Data models for Tasks and Artifacts.
-- `src/templates/`: Default Markdown templates for artifacts (e.g., `implementation-plan.ai.md`).
+- `src/templates/`: Default Markdown templates for artifacts (e.g., `implementation-plan.ai.md`). (In the VS Code extension, these are copied from `packages/core` during the build process).
 - `src/test/`: Comprehensive test suite including unit, service, and integration tests.

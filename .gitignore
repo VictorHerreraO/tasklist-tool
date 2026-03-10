@@ -150,6 +150,7 @@ vite.config.ts.timestamp-*
 .vscode-test/
 *.vsix
 out/
+packages/extension/templates/
 
 # AI files
 .tasks/
