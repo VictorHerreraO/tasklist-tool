@@ -1,7 +1,7 @@
 ---
 id: walkthrough
 displayName: Walkthrough
-description: Narrative explanation of code or a process, written to help a reader understand what was built and why.
+description: Narrative explanation of code or a process, written to help a reader understand what was built and why. Use this template during the VERIFICATION phase after code is written to formally document the solution, entry points, and execution flow.
 filename: walkthrough.ai.md
 ---
 

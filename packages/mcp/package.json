@@ -1,35 +1,35 @@
 {
-    "name": "@tasklist/mcp",
-    "version": "0.1.2",
-    "description": "MCP server for Tasklist Tool",
-    "type": "module",
-    "main": "out/src/index.js",
-    "types": "out/src/index.d.ts",
-    "bin": {
-        "tasklist-mcp": "./bin/tasklist-mcp"
-    },
-    "scripts": {
-        "compile": "tsc -p ./",
-        "watch": "tsc -watch -p ./",
-        "start": "node out/src/index.js",
-        "build": "tsc -p ./",
-        "dev": "tsx watch src/index.ts",
-        "pretest": "tsc -p ./",
-        "test": "mocha"
-    },
-    "engines": {
-        "node": ">=18"
-    },
-    "dependencies": {
-        "@modelcontextprotocol/sdk": "^1.6.1",
-        "@tasklist/core": "*",
-        "zod": "^3.23.8"
-    },
-    "devDependencies": {
-        "@types/mocha": "^10.0.10",
-        "@types/node": "20.x",
-        "mocha": "^11.1.0",
-        "tsx": "^4.19.2",
-        "typescript": "^5.7.3"
-    }
+  "name": "@tasklist/mcp",
+  "version": "0.1.3",
+  "description": "MCP server for Tasklist Tool",
+  "type": "module",
+  "main": "out/src/index.js",
+  "types": "out/src/index.d.ts",
+  "bin": {
+    "tasklist-mcp": "./bin/tasklist-mcp"
+  },
+  "scripts": {
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "start": "node out/src/index.js",
+    "build": "tsc -p ./",
+    "dev": "tsx watch src/index.ts",
+    "pretest": "tsc -p ./",
+    "test": "mocha"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.6.1",
+    "@tasklist/core": "*",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/mocha": "^10.0.10",
+    "@types/node": "20.x",
+    "mocha": "^11.1.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.3"
+  }
 }

@@ -1,7 +1,7 @@
 ---
 id: task-details
 displayName: Task Details
-description: Structured overview of the task scope, goals, constraints, and acceptance criteria.
+description: Structured overview of the task scope, goals, constraints, and acceptance criteria. Use this template when beginning a new complex objective to clarify and align on what exactly needs to be done and what is out of scope.
 filename: task-details.ai.md
 ---
 

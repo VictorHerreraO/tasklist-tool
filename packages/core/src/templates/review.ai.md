@@ -1,7 +1,7 @@
 ---
 id: review
 displayName: Review Notes
-description: Structured feedback and observations from a code or design review.
+description: Structured feedback and observations from a code or design review. Use this template when asked to review existing code, PRs, or design docs. Document strengths, critical/minor issues, questions, and an overall verdict.
 filename: review.ai.md
 ---
 
