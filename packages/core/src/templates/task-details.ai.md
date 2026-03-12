@@ -7,6 +7,16 @@ filename: task-details.ai.md
 
 # Task Details
 
+> [!NOTE]
+> **Task Hierarchy**: The workspace supports a two-level hierarchy of **Projects** and **Subtasks**.
+> - **Project**: A container (type: 'project') that groups related subtasks.
+> - **Subtask**: A granular task belonging to a parent project.
+> Agents can use `promote_to_project` to convert a task into a container, and `create_task` with `parentTaskId` to organize specific work items.
+
+## Task Information
+- **Type**: <!-- 'task' | 'project' -->
+- **Parent ID**: <!-- parentTaskId (if subtask) -->
+
 ## Goal
 <!-- Describe the primary objective of this task in 1-2 sentences. -->
 
