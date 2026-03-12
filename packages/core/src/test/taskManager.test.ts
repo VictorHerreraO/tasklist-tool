@@ -111,9 +111,38 @@ describe('TaskManager', () => {
             assert.strictEqual(entry.type, 'project');
         });
 
-        it('supports optional parentTaskId', () => {
-            const entry = manager.createTask('sub-task', 'task', 'parent-123');
-            assert.strictEqual(entry.parentTaskId, 'parent-123');
+        it('supports optional parentTaskId (must be a project)', () => {
+            manager.createTask('parent-proj', 'project');
+            const entry = manager.createTask('sub-task', 'task', 'parent-proj');
+            assert.strictEqual(entry.parentTaskId, 'parent-proj');
+        });
+
+        it('throws when parentTaskId does not exist', () => {
+            assert.throws(
+                () => manager.createTask('sub-task', 'task', 'no-parent'),
+                /Parent task 'no-parent' not found\./
+            );
+        });
+
+        it('throws when parent task is NOT a project', () => {
+            manager.createTask('item-task', 'task');
+            assert.throws(
+                () => manager.createTask('sub-task', 'task', 'item-task'),
+                /Parent task 'item-task' is not a project\./
+            );
+        });
+
+        it('writes subtask to the nested index file', () => {
+            manager.createTask('my-proj', 'project');
+            manager.createTask('nested-1', 'task', 'my-proj');
+
+            const nestedIndexPath = path.join(workspaceRoot, '.tasks', 'my-proj', 'index.json');
+            assert.ok(fs.existsSync(nestedIndexPath), 'Nested index.json should exist');
+
+            const raw = fs.readFileSync(nestedIndexPath, 'utf-8');
+            const index = JSON.parse(raw);
+            assert.strictEqual(index.tasks.length, 1);
+            assert.strictEqual(index.tasks[0].id, 'nested-1');
         });
 
         it('persists task across manager instances (reads from disk)', () => {
@@ -175,6 +204,8 @@ describe('TaskManager', () => {
         describe('hierarchy filtering', () => {
             beforeEach(() => {
                 // We already have task-a, task-b, task-c in the outer beforeEach
+                manager.promoteTaskToProject('task-a');
+                manager.promoteTaskToProject('task-b');
                 manager.createTask('sub-1', 'task', 'task-a');
                 manager.createTask('sub-2', 'task', 'task-a');
                 manager.createTask('sub-3', 'task', 'task-b');
@@ -202,6 +233,14 @@ describe('TaskManager', () => {
                 const result = manager.listTasks(TaskStatus.InProgress, 'task-a');
                 assert.strictEqual(result.length, 1);
                 assert.strictEqual(result[0].id, 'sub-1');
+            });
+
+            it('subtasks do NOT appear in root index file', () => {
+                const rootIndexPath = path.join(workspaceRoot, '.tasks', 'index.json');
+                const raw = fs.readFileSync(rootIndexPath, 'utf-8');
+                const index = JSON.parse(raw);
+                const sub1 = index.tasks.find((t: any) => t.id === 'sub-1');
+                assert.strictEqual(sub1, undefined, 'sub-1 should not be in root index');
             });
         });
     });

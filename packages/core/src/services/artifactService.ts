@@ -53,8 +53,7 @@ export class ArtifactService {
      * Used to gate write operations against non-existent tasks.
      */
     private assertTaskExists(taskId: string): void {
-        const exists = this.taskManager.listTasks().some(t => t.id === taskId);
-        if (!exists) {
+        if (!this.taskManager.taskExists(taskId)) {
             throw new Error(
                 `Task '${taskId}' not found. Use 'create_task' to create it first.`
             );
