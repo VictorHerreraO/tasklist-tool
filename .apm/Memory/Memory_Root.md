@@ -23,6 +23,18 @@
   - [Task 2.1 - Update Task Models](file:///Users/victor.herrera/Workspace/tasklist-tool/.apm/Memory/Phase_02_Foundation_Models_Manager/Task_2_1_Update_Task_Models.md)
   - [Task 2.2 - TaskManager Core Update](file:///Users/victor.herrera/Workspace/tasklist-tool/.apm/Memory/Phase_02_Foundation_Models_Manager/Task_2_2_TaskManager_Core_Update.md)
 
+
+---
+## Phase 03 – Logic (Promotion & Nested Resolution) Summary
+* Implemented `promoteTaskToProject` logic, allowing tasks to become containers with their own nested `index.json`.
+* Enabled subtask management in `TaskManager`, including global task resolution across multiple indices for all state transition methods.
+* Updated `ArtifactService` with hierarchical path resolution, nesting subtask artifacts within their parent project directories.
+* Involved Agents: Agent_Core
+* Logs:
+  - [Task 3.1 - Implement Task Promotion Logic](file:///Users/victor.herrera/Workspace/tasklist-tool/.apm/Memory/Phase_03_Logic_Promotion_Nested_Resolution/Task_3_1_Implement_Task_Promotion_Logic.md)
+  - [Task 3.2 - Nested Index Management](file:///Users/victor.herrera/Workspace/tasklist-tool/.apm/Memory/Phase_03_Logic_Promotion_Nested_Resolution/Task_3_2_Nested_Index_Management.md)
+  - [Task 3.3 - Artifact Path Resolution Update](file:///Users/victor.herrera/Workspace/tasklist-tool/.apm/Memory/Phase_03_Logic_Promotion_Nested_Resolution/Task_3_3_Artifact_Path_Resolution_Update.md)
+
 ---
 ### Phase 01 – Monorepo Restructuring & Core Extraction
 * Successfully converted the repository into an npm monorepo with `@tasklist/core` and `tasklist-tool` (extension) workspaces.

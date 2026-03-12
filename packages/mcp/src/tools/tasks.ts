@@ -25,34 +25,49 @@ import {
     handleDeactivateTask,
     handleStartTask,
     handleCloseTask,
+    handlePromoteToProject,
 } from '../handlers/taskHandlers.js';
 
 server.tool(
     'list_tasks',
     'List tasks in the workspace, optionally filtered by status. ' +
     'Returns task IDs, statuses, and timestamps. ' +
-    'Accepted status values: "open", "in-progress", "closed". Omit to list all tasks.',
+    'Accepted status values: "open", "in-progress", "closed". Omit to list all tasks. ' +
+    'By default (if parentTaskId is omitted), only top-level tasks/projects are returned.',
     {
         status: z
             .enum([TaskStatus.Open, TaskStatus.InProgress, TaskStatus.Closed])
             .optional()
             .describe('Filter tasks by this status. Omit to return all tasks.'),
+        parentTaskId: z
+            .string()
+            .optional()
+            .describe('Filter tasks by parent project ID. If omitted, only top-level tasks are returned.'),
     },
-    ({ status }) => handleListTasks(taskManager, { status })
+    ({ status, parentTaskId }) => handleListTasks(taskManager, { status, parentTaskId })
 );
 
 server.tool(
     'create_task',
     'Create a new task in the workspace with status "open". ' +
     'The taskId must be unique and URL-friendly (e.g. "feature-login"). ' +
+    'A task with type: "project" acts as a container for subtasks. ' +
     'Use list_tasks to check for existing IDs before creating.',
     {
         taskId: z
             .string()
             .min(1, 'taskId must not be empty')
             .describe('Unique, URL-friendly identifier for the new task (e.g. "feature-login").'),
+        type: z
+            .enum(['task', 'project'])
+            .optional()
+            .describe("Whether this is a 'task' or a 'project'. Defaults to 'task'."),
+        parentTaskId: z
+            .string()
+            .optional()
+            .describe('Optional ID of the parent project. The parent must be a task with type: "project".'),
     },
-    ({ taskId }) => handleCreateTask(taskManager, { taskId })
+    ({ taskId, type, parentTaskId }) => handleCreateTask(taskManager, { taskId, type, parentTaskId })
 );
 
 server.tool(
@@ -103,4 +118,16 @@ server.tool(
             .describe('ID of the task to close (must be in "in-progress" status).'),
     },
     ({ taskId }) => handleCloseTask(taskManager, { taskId })
+);
+
+server.tool(
+    'promote_to_project',
+    'Converts an existing task into a project, enabling it to contain subtasks.',
+    {
+        taskId: z
+            .string()
+            .min(1)
+            .describe('ID of the task to promote to a project.'),
+    },
+    ({ taskId }) => handlePromoteToProject(taskManager, { taskId })
 );
