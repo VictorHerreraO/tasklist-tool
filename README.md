@@ -15,6 +15,7 @@ This project is structured as a **monorepo** consisting of three npm packages:
 
 ## Key Features
 
+- **Hierarchical Task Management**: Organize work into **Projects** and **Subtasks**. Projects act as containers that can hold multiple subtasks, allowing for better organization of complex workflows.
 - **Structured Task Management**: Create, start, and close tasks with unique tracking identifiers.
 - **Active Task Context**: Set an "active" task to simplify subsequent operations and focus an agent's workflow.
 - **Artifact Management**: Generate and update documentation artifacts (e.g., implementation plans, research notes, walkthroughs).
@@ -23,11 +24,12 @@ This project is structured as a **monorepo** consisting of three npm packages:
 
 ## Available Agent Tools
 
-Both the VS Code Extension and the MCP Server expose the exact same **11 core tools**:
+Both the VS Code Extension and the MCP Server expose the exact same **12 core tools**:
 
 ### Task Lifecycle Tools
-- `list_tasks`: Retrieve tasks from the workspace.
-- `create_task`: Initialize a new task entry.
+- `list_tasks`: Retrieve tasks from the workspace. Supports filtering by project ID to see subtasks.
+- `create_task`: Initialize a new task or project.
+- `promote_to_project`: Convert an existing task into a project.
 - `activate_task`: Set the current focus task.
 - `deactivate_task`: Clear the active focus task.
 - `start_task`: Transition a task to in-progress.

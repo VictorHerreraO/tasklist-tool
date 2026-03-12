@@ -1,6 +1,6 @@
 # Tasklist Tool – Hierarchical Task Management - APM Implementation Plan
 **Memory Strategy:** Dynamic-MD
-**Last Modification:** Completed Task 5.1 (Update Extension Tree Provider). Proceeding to Task 5.2 (Implement "Promote to Project" Command).
+**Last Modification:** Project Completed (Hierarchical Task Management). All 15 tasks across 5 phases successfully implemented and verified.
 **Project Overview:** This project introduces a two-level hierarchy (Projects and Subtasks) to the Tasklist Tool. It involves updating the core models, enhancing the TaskManager with promotion logic and nested index management, updating path resolution in ArtifactService, and exposing these features via MCP tools and the VS Code Extension.
 
 ## Phase 1: Test Infrastructure & Baseline
@@ -80,14 +80,14 @@
 - **Guidance:** Ensure projects are expandable and subtasks are rendered correctly nested.
 - **Depends on:** Task 3.3 Output
 
-### Task 5.2 – Implement "Promote to Project" Command - Agent_Extension
+### Task 5.2 – Implement "Promote to Project" Command - Agent_Extension (Completed)
 - **Objective:** Add the UI command to the VS Code context menu.
-- **Output:** New command registration in `packages/extension/src/commands.ts` and `package.json`.
+- **Output:** New command registration in `packages/extension/src/extension.ts` and `package.json`.
 - **Guidance:** Trigger the `TaskManager.promoteTaskToProject` method from the core.
 - **Depends on:** Task 5.1 Output
 
-### Task 5.3 – Extension Portfolio Update - Agent_Extension
+### Task 5.3 – Extension Portfolio Update - Agent_Extension (Completed)
 - **Objective:** Update user-facing documentation for the extension.
-- **Output:** Updated `packages/extension/README.md` and walkthroughs.
+- **Output:** Updated `packages/extension/README.md` and any relevant walkthrough/documentation files.
 - **Guidance:** Illustrate the new workflow with a "Project/Subtask" example.
 - **Depends on:** Task 5.2 Output

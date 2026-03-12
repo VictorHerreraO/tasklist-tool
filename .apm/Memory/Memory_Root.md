@@ -53,3 +53,5 @@
 * Involved Agents: Agent_Extension
 * Logs:
   - [Task 5.1 - Update Extension Tree Provider](file:///Users/victor.herrera/Workspace/tasklist-tool/.apm/Memory/Phase_05_VS_Code_Extension_Integration/Task_5_1_Update_Extension_Tree_Provider.md)
+  - [Task 5.2 - Implement "Promote to Project" Command](file:///Users/victor.herrera/Workspace/tasklist-tool/.apm/Memory/Phase_05_VS_Code_Extension_Integration/Task_5_2_Implement_Promote_to_Project_Command.md)
+  - [Task 5.3 - Extension Portfolio Update](file:///Users/victor.herrera/Workspace/tasklist-tool/.apm/Memory/Phase_05_VS_Code_Extension_Integration/Task_5_3_Extension_Portfolio_Update.md)
