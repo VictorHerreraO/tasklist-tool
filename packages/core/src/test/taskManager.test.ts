@@ -206,6 +206,62 @@ describe('TaskManager', () => {
         });
     });
 
+    describe('promoteTaskToProject', () => {
+        it('transitions a task to project type', () => {
+            manager.createTask('t-to-p');
+            const entry = manager.promoteTaskToProject('t-to-p');
+            assert.strictEqual(entry.type, 'project');
+        });
+
+        it('creates a dedicated directory and index.json', () => {
+            manager.createTask('t-dir');
+            manager.promoteTaskToProject('t-dir');
+
+            const projectDir = path.join(workspaceRoot, '.tasks', 't-dir');
+            const subIndexPath = path.join(projectDir, 'index.json');
+
+            assert.ok(fs.existsSync(projectDir), 'Project directory should exist');
+            assert.ok(fs.statSync(projectDir).isDirectory(), 'Project path should be a directory');
+            assert.ok(fs.existsSync(subIndexPath), 'Sub-index.json should exist');
+
+            const raw = fs.readFileSync(subIndexPath, 'utf-8');
+            const subIndex = JSON.parse(raw);
+            assert.deepStrictEqual(subIndex, { activeTaskId: null, tasks: [] });
+        });
+
+        it('updates updatedAt timestamp', () => {
+            const entry1 = manager.createTask('t-time');
+            const before = Date.now();
+            const entry2 = manager.promoteTaskToProject('t-time');
+            assert.ok(entry2.updatedAt >= before);
+            assert.ok(entry2.updatedAt >= entry1.createdAt);
+        });
+
+        it('persists promotion to disk', () => {
+            manager.createTask('t-persist');
+            manager.promoteTaskToProject('t-persist');
+
+            const manager2 = new TaskManager(workspaceRoot);
+            const tasks = manager2.listTasks();
+            assert.strictEqual(tasks.find(t => t.id === 't-persist')?.type, 'project');
+        });
+
+        it('throws if task does not exist', () => {
+            assert.throws(
+                () => manager.promoteTaskToProject('no-task'),
+                /Task 'no-task' not found\./
+            );
+        });
+
+        it('throws if task is already a project', () => {
+            manager.createTask('already-p', 'project');
+            assert.throws(
+                () => manager.promoteTaskToProject('already-p'),
+                /Task 'already-p' is already a project\./
+            );
+        });
+    });
+
     // ── Activation / Deactivation ──────────────────────────────────────────
 
     describe('activateTask / deactivateTask / getActiveTask', () => {

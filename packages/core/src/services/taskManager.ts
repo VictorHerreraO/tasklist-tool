@@ -116,6 +116,43 @@ export class TaskManager {
     }
 
     /**
+     * Transitions a task into a project.
+     *
+     * @param taskId - ID of the task to promote.
+     * @throws {Error} If the task is not found or is already a project.
+     */
+    promoteTaskToProject(taskId: string): TaskEntry {
+        const index = this.readIndex();
+        const entry = this.findEntry(index, taskId);
+        if (!entry) {
+            throw new Error(`Task '${taskId}' not found.`);
+        }
+        if (entry.type === 'project') {
+            throw new Error(`Task '${taskId}' is already a project.`);
+        }
+
+        // Change type to project
+        entry.type = 'project';
+        entry.updatedAt = Date.now();
+
+        // Ensure project directory exists at .tasks/${taskId}/
+        const projectDir = path.join(this.workspaceRoot, '.tasks', taskId);
+        if (!fs.existsSync(projectDir)) {
+            fs.mkdirSync(projectDir, { recursive: true });
+        }
+
+        // Initialize empty sub-index if it doesn't exist
+        const subIndexPath = path.join(projectDir, 'index.json');
+        if (!fs.existsSync(subIndexPath)) {
+            const subIndex: TaskIndex = { activeTaskId: null, tasks: [] };
+            fs.writeFileSync(subIndexPath, JSON.stringify(subIndex, null, 2), 'utf-8');
+        }
+
+        this.writeIndex(index);
+        return entry;
+    }
+
+    /**
      * Returns the currently active task entry, or `null` if none is active.
      */
     getActiveTask(): TaskEntry | null {
