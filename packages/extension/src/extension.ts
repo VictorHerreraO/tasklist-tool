@@ -11,6 +11,7 @@ import { ListArtifactsTool } from './tools/listArtifactsTool.js';
 import { GetArtifactTool } from './tools/getArtifactTool.js';
 import { UpdateArtifactTool } from './tools/updateArtifactTool.js';
 import { RegisterArtifactTypeTool } from './tools/registerArtifactTypeTool.js';
+import { TaskTreeProvider } from './views/TaskTreeProvider.js';
 
 /**
  * Activates the extension.
@@ -35,6 +36,12 @@ export async function activate(context: vscode.ExtensionContext) {
     const registry = new ArtifactRegistry(extensionRoot, workspaceRoot);
     await registry.initialize();
     const artifactService = new ArtifactService(workspaceRoot, taskManager, registry);
+
+    // Register Tree Provider
+    const treeProvider = new TaskTreeProvider(taskManager);
+    context.subscriptions.push(
+        vscode.window.registerTreeDataProvider('tasklist-tree', treeProvider)
+    );
 
     // Register all 11 LM tools.
     context.subscriptions.push(

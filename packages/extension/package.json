@@ -240,7 +240,25 @@
           ]
         }
       }
-    ]
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "tasklist-explorer",
+          "title": "Tasklist Tool",
+          "icon": "$(list-unordered)"
+        }
+      ]
+    },
+    "views": {
+      "tasklist-explorer": [
+        {
+          "id": "tasklist-tree",
+          "name": "Tasks",
+          "type": "tree"
+        }
+      ]
+    }
   },
   "scripts": {
     "vscode:prepublish": "npm run bundle",

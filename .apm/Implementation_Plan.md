@@ -1,6 +1,6 @@
 # Tasklist Tool – Hierarchical Task Management - APM Implementation Plan
 **Memory Strategy:** Dynamic-MD
-**Last Modification:** Completed Task 4.2 (Hierarchical Verification Suite). Proceeding to Task 4.3 (Documentation Update).
+**Last Modification:** Completed Task 5.1 (Update Extension Tree Provider). Proceeding to Task 5.2 (Implement "Promote to Project" Command).
 **Project Overview:** This project introduces a two-level hierarchy (Projects and Subtasks) to the Tasklist Tool. It involves updating the core models, enhancing the TaskManager with promotion logic and nested index management, updating path resolution in ArtifactService, and exposing these features via MCP tools and the VS Code Extension.
 
 ## Phase 1: Test Infrastructure & Baseline
@@ -67,14 +67,14 @@
 - **Guidance:** Follow existing test patterns for directory mocking and index validation. Include recursive cleanup tests.
 - **Depends on:** Task 4.1 Output by Agent_MCP
 
-### Task 4.3 – Documentation Update - Agent_MCP
+### Task 4.3 – Documentation Update - Agent_MCP (Completed)
 - **Objective:** Update system templates to reflect the new hierarchy.
 - **Output:** Updated `packages/core/src/templates/task-details.ai.md` mentioning the project type.
 - **Guidance:** Ensure agents are aware they can now organize work into projects.
 - **Depends on:** Task 4.1 Output
 
 ## Phase 5: VS Code Extension Integration
-### Task 5.1 – Update Extension Tree Provider - Agent_Extension
+### Task 5.1 – Update Extension Tree Provider - Agent_Extension (Completed)
 - **Objective:** Update the VS Code Tree View to render hierarchical tasks.
 - **Output:** Modified `packages/extension/src/views/TaskTreeProvider.ts` supporting nested `TreeItem` children.
 - **Guidance:** Ensure projects are expandable and subtasks are rendered correctly nested.
