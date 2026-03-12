@@ -2,7 +2,8 @@ import * as assert from 'assert';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
-import { TaskManager, TaskStatus } from '@tasklist/core';
+import { TaskManager } from '../services/taskManager.js';
+import { TaskStatus } from '../models/task.js';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -18,60 +19,60 @@ function removeTmpWorkspace(dir: string): void {
 
 // ─── Test Suite ─────────────────────────────────────────────────────────────
 
-suite('TaskManager', () => {
+describe('TaskManager', () => {
     let workspaceRoot: string;
     let manager: TaskManager;
 
-    setup(() => {
+    beforeEach(() => {
         workspaceRoot = makeTmpWorkspace();
         manager = new TaskManager(workspaceRoot);
     });
 
-    teardown(() => {
+    afterEach(() => {
         removeTmpWorkspace(workspaceRoot);
     });
 
     // ── Lazy initialisation ────────────────────────────────────────────────
 
-    suite('lazy initialisation', () => {
-        test('does NOT create .tasks/ on construction', () => {
+    describe('lazy initialisation', () => {
+        it('does NOT create .tasks/ on construction', () => {
             const tasksDir = path.join(workspaceRoot, '.tasks');
             assert.strictEqual(fs.existsSync(tasksDir), false, '.tasks/ should not exist yet');
         });
 
-        test('creates .tasks/ and index.json on first write (createTask)', () => {
+        it('creates .tasks/ and index.json on first write (createTask)', () => {
             manager.createTask('first-task');
             const indexPath = path.join(workspaceRoot, '.tasks', 'index.json');
             assert.ok(fs.existsSync(indexPath), 'index.json should be created after first write');
         });
 
-        test('index.json contains valid JSON after first write', () => {
+        it('index.json contains valid JSON after first write', () => {
             manager.createTask('first-task');
             const indexPath = path.join(workspaceRoot, '.tasks', 'index.json');
             const raw = fs.readFileSync(indexPath, 'utf-8');
             assert.doesNotThrow(() => JSON.parse(raw), 'index.json should be valid JSON');
         });
 
-        test('listTasks returns empty array before any writes', () => {
+        it('listTasks returns empty array before any writes', () => {
             const tasks = manager.listTasks();
             assert.deepStrictEqual(tasks, []);
         });
 
-        test('getActiveTask returns null before any writes', () => {
+        it('getActiveTask returns null before any writes', () => {
             assert.strictEqual(manager.getActiveTask(), null);
         });
     });
 
     // ── CRUD operations ────────────────────────────────────────────────────
 
-    suite('createTask', () => {
-        test('returns a TaskEntry with correct id and open status', () => {
+    describe('createTask', () => {
+        it('returns a TaskEntry with correct id and open status', () => {
             const entry = manager.createTask('my-task');
             assert.strictEqual(entry.id, 'my-task');
             assert.strictEqual(entry.status, TaskStatus.Open);
         });
 
-        test('sets createdAt and updatedAt to approximately now', () => {
+        it('sets createdAt and updatedAt to approximately now', () => {
             const before = Date.now();
             const entry = manager.createTask('my-task');
             const after = Date.now();
@@ -79,7 +80,7 @@ suite('TaskManager', () => {
             assert.ok(entry.updatedAt >= before && entry.updatedAt <= after);
         });
 
-        test('persists task across manager instances (reads from disk)', () => {
+        it('persists task across manager instances (reads from disk)', () => {
             manager.createTask('persisted-task');
             const manager2 = new TaskManager(workspaceRoot);
             const tasks = manager2.listTasks();
@@ -87,7 +88,7 @@ suite('TaskManager', () => {
             assert.strictEqual(tasks[0].id, 'persisted-task');
         });
 
-        test('throws when id already exists', () => {
+        it('throws when id already exists', () => {
             manager.createTask('dup-task');
             assert.throws(
                 () => manager.createTask('dup-task'),
@@ -96,8 +97,8 @@ suite('TaskManager', () => {
         });
     });
 
-    suite('listTasks', () => {
-        setup(() => {
+    describe('listTasks', () => {
+        beforeEach(() => {
             manager.createTask('task-a'); // open
             manager.createTask('task-b'); // will become in-progress
             manager.createTask('task-c'); // will become closed
@@ -106,29 +107,29 @@ suite('TaskManager', () => {
             manager.close_task('task-c');
         });
 
-        test('returns all tasks when no filter is given', () => {
+        it('returns all tasks when no filter is given', () => {
             assert.strictEqual(manager.listTasks().length, 3);
         });
 
-        test('filters by open status', () => {
+        it('filters by open status', () => {
             const result = manager.listTasks(TaskStatus.Open);
             assert.strictEqual(result.length, 1);
             assert.strictEqual(result[0].id, 'task-a');
         });
 
-        test('filters by in-progress status', () => {
+        it('filters by in-progress status', () => {
             const result = manager.listTasks(TaskStatus.InProgress);
             assert.strictEqual(result.length, 1);
             assert.strictEqual(result[0].id, 'task-b');
         });
 
-        test('filters by closed status', () => {
+        it('filters by closed status', () => {
             const result = manager.listTasks(TaskStatus.Closed);
             assert.strictEqual(result.length, 1);
             assert.strictEqual(result[0].id, 'task-c');
         });
 
-        test('returns empty array for filter with no matches', () => {
+        it('returns empty array for filter with no matches', () => {
             // All tasks created fresh in a new workspace
             const emptyManager = new TaskManager(makeTmpWorkspace());
             const result = emptyManager.listTasks(TaskStatus.Closed);
@@ -138,8 +139,8 @@ suite('TaskManager', () => {
 
     // ── Activation / Deactivation ──────────────────────────────────────────
 
-    suite('activateTask / deactivateTask / getActiveTask', () => {
-        test('activates a task and getActiveTask returns it', () => {
+    describe('activateTask / deactivateTask / getActiveTask', () => {
+        it('activates a task and getActiveTask returns it', () => {
             manager.createTask('task-x');
             manager.activateTask('task-x');
             const active = manager.getActiveTask();
@@ -147,7 +148,7 @@ suite('TaskManager', () => {
             assert.strictEqual(active.id, 'task-x');
         });
 
-        test('only one task can be active at a time', () => {
+        it('only one task can be active at a time', () => {
             manager.createTask('task-1');
             manager.createTask('task-2');
             manager.activateTask('task-1');
@@ -155,18 +156,18 @@ suite('TaskManager', () => {
             assert.strictEqual(manager.getActiveTask()?.id, 'task-2');
         });
 
-        test('deactivateTask clears the active task', () => {
+        it('deactivateTask clears the active task', () => {
             manager.createTask('task-x');
             manager.activateTask('task-x');
             manager.deactivateTask();
             assert.strictEqual(manager.getActiveTask(), null);
         });
 
-        test('deactivateTask is idempotent when no task is active', () => {
+        it('deactivateTask is idempotent when no task is active', () => {
             assert.doesNotThrow(() => manager.deactivateTask());
         });
 
-        test('activateTask throws for non-existent task', () => {
+        it('activateTask throws for non-existent task', () => {
             assert.throws(
                 () => manager.activateTask('no-such-task'),
                 /Cannot activate task 'no-such-task': task not found\./
@@ -176,21 +177,21 @@ suite('TaskManager', () => {
 
     // ── State machine: valid transitions ───────────────────────────────────
 
-    suite('start_task (open → in-progress)', () => {
-        test('transitions status to in-progress', () => {
+    describe('start_task (open → in-progress)', () => {
+        it('transitions status to in-progress', () => {
             manager.createTask('t1');
             const entry = manager.start_task('t1');
             assert.strictEqual(entry.status, TaskStatus.InProgress);
         });
 
-        test('updates updatedAt timestamp', () => {
+        it('updates updatedAt timestamp', () => {
             manager.createTask('t1');
             const before = Date.now();
             const entry = manager.start_task('t1');
             assert.ok(entry.updatedAt >= before);
         });
 
-        test('persists status change to disk', () => {
+        it('persists status change to disk', () => {
             manager.createTask('t1');
             manager.start_task('t1');
             const manager2 = new TaskManager(workspaceRoot);
@@ -198,15 +199,15 @@ suite('TaskManager', () => {
         });
     });
 
-    suite('close_task (in-progress → closed)', () => {
-        test('transitions status to closed', () => {
+    describe('close_task (in-progress → closed)', () => {
+        it('transitions status to closed', () => {
             manager.createTask('t2');
             manager.start_task('t2');
             const entry = manager.close_task('t2');
             assert.strictEqual(entry.status, TaskStatus.Closed);
         });
 
-        test('updates updatedAt timestamp', () => {
+        it('updates updatedAt timestamp', () => {
             manager.createTask('t2');
             manager.start_task('t2');
             const before = Date.now();
@@ -214,7 +215,7 @@ suite('TaskManager', () => {
             assert.ok(entry.updatedAt >= before);
         });
 
-        test('persists status change to disk', () => {
+        it('persists status change to disk', () => {
             manager.createTask('t2');
             manager.start_task('t2');
             manager.close_task('t2');
@@ -225,15 +226,15 @@ suite('TaskManager', () => {
 
     // ── State machine: invalid transitions ─────────────────────────────────
 
-    suite('invalid state transitions', () => {
-        test('start_task throws when task does not exist', () => {
+    describe('invalid state transitions', () => {
+        it('start_task throws when task does not exist', () => {
             assert.throws(
                 () => manager.start_task('ghost'),
                 /Task 'ghost' not found\./
             );
         });
 
-        test('start_task throws when status is in-progress (exact message)', () => {
+        it('start_task throws when status is in-progress (exact message)', () => {
             manager.createTask('t3');
             manager.start_task('t3');
             assert.throws(
@@ -242,7 +243,7 @@ suite('TaskManager', () => {
             );
         });
 
-        test('start_task throws when status is closed (exact message)', () => {
+        it('start_task throws when status is closed (exact message)', () => {
             manager.createTask('t4');
             manager.start_task('t4');
             manager.close_task('t4');
@@ -252,14 +253,14 @@ suite('TaskManager', () => {
             );
         });
 
-        test('close_task throws when task does not exist', () => {
+        it('close_task throws when task does not exist', () => {
             assert.throws(
                 () => manager.close_task('ghost'),
                 /Task 'ghost' not found\./
             );
         });
 
-        test('close_task throws when status is open (exact message with hint)', () => {
+        it('close_task throws when status is open (exact message with hint)', () => {
             manager.createTask('t5');
             assert.throws(
                 () => manager.close_task('t5'),
@@ -267,7 +268,7 @@ suite('TaskManager', () => {
             );
         });
 
-        test('close_task throws when status is already closed (exact message)', () => {
+        it('close_task throws when status is already closed (exact message)', () => {
             manager.createTask('t6');
             manager.start_task('t6');
             manager.close_task('t6');

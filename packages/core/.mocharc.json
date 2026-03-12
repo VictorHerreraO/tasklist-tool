@@ -3,7 +3,6 @@
         "ts"
     ],
     "spec": "src/test/**/*.test.ts",
-    "require": "ts-node/register",
     "ui": "bdd",
     "recursive": true,
     "exit": true,
