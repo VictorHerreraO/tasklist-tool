@@ -143,7 +143,7 @@ describe('TaskManager', () => {
             manager.close_task('task-c');
         });
 
-        it('returns all tasks when no filter is given', () => {
+        it('returns all top-level tasks when no filter is given', () => {
             assert.strictEqual(manager.listTasks().length, 3);
         });
 
@@ -170,6 +170,39 @@ describe('TaskManager', () => {
             const emptyManager = new TaskManager(makeTmpWorkspace());
             const result = emptyManager.listTasks(TaskStatus.Closed);
             assert.deepStrictEqual(result, []);
+        });
+
+        describe('hierarchy filtering', () => {
+            beforeEach(() => {
+                // We already have task-a, task-b, task-c in the outer beforeEach
+                manager.createTask('sub-1', 'task', 'task-a');
+                manager.createTask('sub-2', 'task', 'task-a');
+                manager.createTask('sub-3', 'task', 'task-b');
+            });
+
+            it('returns only top-level tasks by default', () => {
+                const result = manager.listTasks();
+                const ids = result.map(t => t.id).sort();
+                assert.deepStrictEqual(ids, ['task-a', 'task-b', 'task-c']);
+            });
+
+            it('returns subtasks for a specific parent', () => {
+                const result = manager.listTasks(undefined, 'task-a');
+                const ids = result.map(t => t.id).sort();
+                assert.deepStrictEqual(ids, ['sub-1', 'sub-2']);
+            });
+
+            it('returns empty array for parent with no subtasks', () => {
+                const result = manager.listTasks(undefined, 'task-c');
+                assert.deepStrictEqual(result, []);
+            });
+
+            it('filters subtasks by status', () => {
+                manager.start_task('sub-1');
+                const result = manager.listTasks(TaskStatus.InProgress, 'task-a');
+                assert.strictEqual(result.length, 1);
+                assert.strictEqual(result[0].id, 'sub-1');
+            });
         });
     });
 

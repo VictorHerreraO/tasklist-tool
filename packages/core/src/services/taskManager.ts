@@ -95,16 +95,24 @@ export class TaskManager {
     }
 
     /**
-     * Returns all tasks, optionally filtered by status.
+     * Returns tasks, optionally filtered by status and parent task ID.
+     *
+     * By default, only top-level tasks (those without a parent) are returned.
+     * To retrieve subtasks for a specific parent, provide its `parentTaskId`.
      *
      * @param statusFilter - When provided, only tasks with this status are returned.
+     * @param parentTaskIdFilter - When provided, only tasks with this parent are returned.
+     *                             If omitted, only top-level tasks are returned.
      */
-    listTasks(statusFilter?: TaskStatus): TaskEntry[] {
+    listTasks(statusFilter?: TaskStatus, parentTaskIdFilter?: string): TaskEntry[] {
         const index = this.readIndex();
-        if (statusFilter === undefined) {
-            return index.tasks;
-        }
-        return index.tasks.filter(t => t.status === statusFilter);
+        return index.tasks.filter(t => {
+            const matchesStatus = statusFilter === undefined || t.status === statusFilter;
+            const matchesParent = parentTaskIdFilter === undefined
+                ? !t.parentTaskId  // Default: only top-level
+                : t.parentTaskId === parentTaskIdFilter;
+            return matchesStatus && matchesParent;
+        });
     }
 
     /**
