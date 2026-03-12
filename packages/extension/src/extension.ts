@@ -11,7 +11,7 @@ import { ListArtifactsTool } from './tools/listArtifactsTool.js';
 import { GetArtifactTool } from './tools/getArtifactTool.js';
 import { UpdateArtifactTool } from './tools/updateArtifactTool.js';
 import { RegisterArtifactTypeTool } from './tools/registerArtifactTypeTool.js';
-import { TaskTreeProvider } from './views/TaskTreeProvider.js';
+import { TaskTreeProvider, TaskTreeItem } from './views/TaskTreeProvider.js';
 
 /**
  * Activates the extension.
@@ -41,6 +41,19 @@ export async function activate(context: vscode.ExtensionContext) {
     const treeProvider = new TaskTreeProvider(taskManager);
     context.subscriptions.push(
         vscode.window.registerTreeDataProvider('tasklist-tree', treeProvider)
+    );
+
+    // Register Commands
+    context.subscriptions.push(
+        vscode.commands.registerCommand('tasklist.promoteToProject', async (item: TaskTreeItem) => {
+            try {
+                taskManager.promoteTaskToProject(item.task.id);
+                treeProvider.refresh();
+                vscode.window.showInformationMessage(`Task '${item.task.id}' promoted to project successfully.`);
+            } catch (error: any) {
+                vscode.window.showErrorMessage(`Failed to promote task: ${error.message}`);
+            }
+        })
     );
 
     // Register all 11 LM tools.

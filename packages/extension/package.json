@@ -258,6 +258,27 @@
           "type": "tree"
         }
       ]
+    },
+    "commands": [
+      {
+        "command": "tasklist.promoteToProject",
+        "title": "Promote to Project",
+        "icon": "$(project)"
+      }
+    ],
+    "menus": {
+      "view/item/context": [
+        {
+          "command": "tasklist.promoteToProject",
+          "when": "view == tasklist-tree && viewItem == task",
+          "group": "inline"
+        },
+        {
+          "command": "tasklist.promoteToProject",
+          "when": "view == tasklist-tree && viewItem == task",
+          "group": "1_modification"
+        }
+      ]
     }
   },
   "scripts": {
