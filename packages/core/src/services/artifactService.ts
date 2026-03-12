@@ -40,6 +40,10 @@ export class ArtifactService {
 
     /** Returns the absolute path to the task directory inside `.tasks/`. */
     private taskDir(taskId: string): string {
+        const result = this.taskManager.findEntryGlobally(taskId);
+        if (result?.parentTaskId) {
+            return path.join(this.workspaceRoot, '.tasks', result.parentTaskId, taskId);
+        }
         return path.join(this.workspaceRoot, '.tasks', taskId);
     }
 

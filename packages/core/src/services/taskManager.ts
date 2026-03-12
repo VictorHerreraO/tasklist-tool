@@ -88,7 +88,7 @@ export class TaskManager {
      * 
      * @returns The entry and its containing index/parent ID, or undefined if not found.
      */
-    private findEntryGlobally(id: string): { entry: TaskEntry; index: TaskIndex; parentTaskId?: string } | undefined {
+    public findEntryGlobally(id: string): { entry: TaskEntry; index: TaskIndex; parentTaskId?: string } | undefined {
         // 1. Check root
         const rootIndex = this.readIndex();
         const rootEntry = this.findEntry(rootIndex, id);

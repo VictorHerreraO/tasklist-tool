@@ -227,4 +227,42 @@ describe('ArtifactService', () => {
             );
         });
     });
+
+    // ── Hierarchical Path Resolution ──────────────────────────────────────────
+
+    describe('Hierarchical Path Resolution', () => {
+        const PROJECT_ID = 'my-project';
+        const SUBTASK_ID = 'my-subtask';
+
+        beforeEach(() => {
+            // Setup a project and a subtask
+            taskManager.createTask(PROJECT_ID, 'project');
+            taskManager.createTask(SUBTASK_ID, 'task', PROJECT_ID);
+        });
+
+        it('resolves subtask artifacts to nested project directory: .tasks/${projectId}/${subtaskId}/', () => {
+            service.updateArtifact(SUBTASK_ID, 'research', '# Subtask Research');
+            const expectedPath = path.join(workspaceRoot, '.tasks', PROJECT_ID, SUBTASK_ID, 'research.ai.md');
+            assert.ok(fs.existsSync(expectedPath), 'Subtask artifact should be in the nested project directory');
+        });
+
+        it('resolves top-level project artifacts to root directory: .tasks/${projectId}/', () => {
+            service.updateArtifact(PROJECT_ID, 'task-details', '# Project Details');
+            const expectedPath = path.join(workspaceRoot, '.tasks', PROJECT_ID, 'task-details.ai.md');
+            assert.ok(fs.existsSync(expectedPath), 'Project artifact should be in the .tasks/${projectId}/ directory');
+        });
+
+        it('listArtifacts returns correct absolute paths for subtasks', () => {
+            const infos = service.listArtifacts(SUBTASK_ID);
+            const research = infos.find(i => i.type.id === 'research');
+            const expectedPath = path.join(workspaceRoot, '.tasks', PROJECT_ID, SUBTASK_ID, 'research.ai.md');
+            assert.strictEqual(research?.path, expectedPath);
+        });
+
+        it('getArtifact retrieves content from nested directory for subtasks', () => {
+            const content = '# Nested content';
+            service.updateArtifact(SUBTASK_ID, 'research', content);
+            assert.strictEqual(service.getArtifact(SUBTASK_ID, 'research'), content);
+        });
+    });
 });
