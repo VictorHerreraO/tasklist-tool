@@ -2,6 +2,9 @@
 
 This article provides an overview of AI extensibility options in Visual Studio Code, helping you choose the right approach for your extension.
 
+> [!TIP]
+> **TLDR**: Read this to decide whether to build a **Language Model Tool** (agent mode integration), **MCP Tool** (cross-platform), **Chat Participant** (custom chat assistant), or use the **Language Model API** directly.
+
 VS Code includes powerful AI features that enhance the coding experience:
 
 - Code completion: Offers inline code suggestions as you type
