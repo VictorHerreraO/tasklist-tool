@@ -1,6 +1,6 @@
 # Tasklist Tool – Hierarchical Task Management - APM Implementation Plan
 **Memory Strategy:** Dynamic-MD
-**Last Modification:** Completed Task 3.2 (Nested Index Management). Proceeding to Task 3.3 (Artifact Path Resolution).
+**Last Modification:** Completed Task 4.1 (MCP Tool Definition Update). Proceeding to Task 4.2 (Hierarchical Verification Suite).
 **Project Overview:** This project introduces a two-level hierarchy (Projects and Subtasks) to the Tasklist Tool. It involves updating the core models, enhancing the TaskManager with promotion logic and nested index management, updating path resolution in ArtifactService, and exposing these features via MCP tools and the VS Code Extension.
 
 ## Phase 1: Test Infrastructure & Baseline
@@ -55,9 +55,9 @@
 - **Depends on:** Task 3.2 Output
 
 ## Phase 4: Integration (MCP Tools & Testing)
-### Task 4.1 – MCP Tool Definition Update - Agent_MCP
+### Task 4.1 – MCP Tool Definition Update - Agent_MCP (Completed)
 - **Objective:** Expose the new hierarchy features to AI agents via the MCP server.
-- **Output:** Updated tool schemas in `packages/mcp/src/tools/taskTools.ts` for `create_task`, `list_tasks`, and a new `promote_to_project` tool.
+- **Output:** Updated tool schemas in `packages/mcp/src/tools/tasks.ts` for `create_task`, `list_tasks`, and a new `promote_to_project` tool.
 - **Guidance:** Update `create_task` schema to include `parentTaskId?: string` and `type?: 'task' | 'project'`. Update descriptions to clearly explain the Project/Task two-level hierarchy.
 - **Depends on:** Task 3.3 Output by Agent_Core
 
