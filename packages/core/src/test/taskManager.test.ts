@@ -61,6 +61,27 @@ describe('TaskManager', () => {
         it('getActiveTask returns null before any writes', () => {
             assert.strictEqual(manager.getActiveTask(), null);
         });
+
+        it('adds default type="task" to entries missing it from disk (migration)', () => {
+            const indexPath = path.join(workspaceRoot, '.tasks', 'index.json');
+            fs.mkdirSync(path.dirname(indexPath), { recursive: true });
+            const oldIndex = {
+                activeTaskId: null,
+                tasks: [
+                    {
+                        id: 'old-task',
+                        status: 'open',
+                        createdAt: 1000,
+                        updatedAt: 1000
+                    }
+                ]
+            };
+            fs.writeFileSync(indexPath, JSON.stringify(oldIndex));
+
+            const newManager = new TaskManager(workspaceRoot);
+            const tasks = newManager.listTasks();
+            assert.strictEqual(tasks[0].type, 'task');
+        });
     });
 
     // ── CRUD operations ────────────────────────────────────────────────────
@@ -78,6 +99,21 @@ describe('TaskManager', () => {
             const after = Date.now();
             assert.ok(entry.createdAt >= before && entry.createdAt <= after);
             assert.ok(entry.updatedAt >= before && entry.updatedAt <= after);
+        });
+
+        it('defaults to task type', () => {
+            const entry = manager.createTask('default-task');
+            assert.strictEqual(entry.type, 'task');
+        });
+
+        it('supports creating a project type', () => {
+            const entry = manager.createTask('my-proj', 'project');
+            assert.strictEqual(entry.type, 'project');
+        });
+
+        it('supports optional parentTaskId', () => {
+            const entry = manager.createTask('sub-task', 'task', 'parent-123');
+            assert.strictEqual(entry.parentTaskId, 'parent-123');
         });
 
         it('persists task across manager instances (reads from disk)', () => {

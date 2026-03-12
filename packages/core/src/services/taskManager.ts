@@ -38,7 +38,15 @@ export class TaskManager {
             return { activeTaskId: null, tasks: [] };
         }
         const raw = fs.readFileSync(this.indexPath, 'utf-8');
-        return JSON.parse(raw) as TaskIndex;
+        const index = JSON.parse(raw) as TaskIndex;
+
+        // Migration: Ensure all tasks have a type (default to 'task' for existing data)
+        index.tasks = index.tasks.map(t => ({
+            ...t,
+            type: t.type ?? 'task',
+        }));
+
+        return index;
     }
 
     /**
@@ -63,9 +71,11 @@ export class TaskManager {
      * Creates a new task with status `open`.
      *
      * @param id - Unique, URL-friendly task identifier.
+     * @param type - Whether this is a 'task' or a 'project'.
+     * @param parentTaskId - Optional ID of the parent task.
      * @throws {Error} If a task with `id` already exists.
      */
-    createTask(id: string): TaskEntry {
+    createTask(id: string, type: 'task' | 'project' = 'task', parentTaskId?: string): TaskEntry {
         const index = this.readIndex();
         if (this.findEntry(index, id)) {
             throw new Error(`Task '${id}' already exists.`);
@@ -76,6 +86,8 @@ export class TaskManager {
             status: TaskStatus.Open,
             createdAt: now,
             updatedAt: now,
+            type,
+            parentTaskId,
         };
         index.tasks.push(entry);
         this.writeIndex(index);
