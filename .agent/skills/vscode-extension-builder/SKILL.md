@@ -94,7 +94,11 @@ Documentation blocks must include at least:
 > [!TIP]
 > Use JSDoc to explain *why* a function exists and any side effects it might have, not just *what* it does.
 
-## 4. User Involvement & Coordination
+## 4. User Interface & Views
+
+When the user requests to add UI elements such as Sidebar views, Tree views, Webview views, or any custom panel contributions, refer to the [Views](./resources/views.md) resource for design guidelines and best practices.
+
+## 5. User Involvement & Coordination
 
 To ensure alignment with user requirements, the following interaction checkpoints are mandatory during the extension development lifecycle:
 
@@ -115,3 +119,5 @@ For every interaction checkpoint:
 
 - [AI extensibility in VS Code](./resources/ai-extensibility.md)
 - [Language Model Tool API](./resources/llt-tool-api.md)
+- [Views](./resources/views.md)
+- [Tree View API](./resources/tree-view.md)
