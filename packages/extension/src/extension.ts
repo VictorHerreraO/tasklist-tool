@@ -11,7 +11,8 @@ import { ListArtifactsTool } from './tools/listArtifactsTool.js';
 import { GetArtifactTool } from './tools/getArtifactTool.js';
 import { UpdateArtifactTool } from './tools/updateArtifactTool.js';
 import { RegisterArtifactTypeTool } from './tools/registerArtifactTypeTool.js';
-import { TaskTreeProvider, TaskTreeItem } from './views/TaskTreeProvider.js';
+import { PromoteToProjectTool } from './tools/promoteToProjectTool.js';
+import { TaskTreeProvider } from './views/TaskTreeProvider.js';
 
 /**
  * Activates the extension.
@@ -43,20 +44,7 @@ export async function activate(context: vscode.ExtensionContext) {
         vscode.window.registerTreeDataProvider('tasklist-tree', treeProvider)
     );
 
-    // Register Commands
-    context.subscriptions.push(
-        vscode.commands.registerCommand('tasklist.promoteToProject', async (item: TaskTreeItem) => {
-            try {
-                taskManager.promoteTaskToProject(item.task.id);
-                treeProvider.refresh();
-                vscode.window.showInformationMessage(`Task '${item.task.id}' promoted to project successfully.`);
-            } catch (error: any) {
-                vscode.window.showErrorMessage(`Failed to promote task: ${error.message}`);
-            }
-        })
-    );
-
-    // Register all 11 LM tools.
+    // Register all 12 LM tools.
     context.subscriptions.push(
         vscode.lm.registerTool('list_tasks', new ListTasksTool(taskManager)),
         vscode.lm.registerTool('create_task', new CreateTaskTool(taskManager)),
@@ -64,6 +52,7 @@ export async function activate(context: vscode.ExtensionContext) {
         vscode.lm.registerTool('deactivate_task', new DeactivateTaskTool(taskManager)),
         vscode.lm.registerTool('start_task', new StartTaskTool(taskManager)),
         vscode.lm.registerTool('close_task', new CloseTaskTool(taskManager)),
+        vscode.lm.registerTool('promote_to_project', new PromoteToProjectTool(taskManager)),
         vscode.lm.registerTool('list_artifact_types', new ListArtifactTypesTool(registry)),
         vscode.lm.registerTool('list_artifacts', new ListArtifactsTool(taskManager, artifactService)),
         vscode.lm.registerTool('get_artifact', new GetArtifactTool(taskManager, artifactService)),
