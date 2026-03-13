@@ -54,4 +54,15 @@
 * Logs:
   - [Task 5.1 - Update Extension Tree Provider](file:///Users/victor.herrera/Workspace/tasklist-tool/.apm/Memory/Phase_05_VS_Code_Extension_Integration/Task_5_1_Update_Extension_Tree_Provider.md)
   - [Task 5.2 - Implement "Promote to Project" Command](file:///Users/victor.herrera/Workspace/tasklist-tool/.apm/Memory/Phase_05_VS_Code_Extension_Integration/Task_5_2_Implement_Promote_to_Project_Command.md)
-  - [Task 5.3 - Extension Portfolio Update](file:///Users/victor.herrera/Workspace/tasklist-tool/.apm/Memory/Phase_05_VS_Code_Extension_Integration/Task_5_3_Extension_Portfolio_Update.md)
+---
+## Phase 06 – Language Model Tool Migration Summary
+* Successfully migrated the "Promote to Project" feature from a manual VS Code command to a Language Model (LM) Tool.
+* Implemented the `PromoteToProjectTool` logic with robust error handling and user confirmation flows.
+* Integrated comprehensive unit tests for the new LM tool into the extension's test suite.
+* Identified consistency gaps in `create_task` and `list_tasks` LM tools regarding `parentTaskId` support.
+* Involved Agents: Agent_Extension, Agent_QA
+* Logs:
+  - [Task 6.1 - Define promote_to_project in package.json](file:///Users/victor.herrera/Workspace/tasklist-tool/.apm/Memory/Phase_06_LM_Tool_Migration/Task_6_1_Define_promote_to_project_in_package_json.md)
+  - [Task 6.2 - Implement PromoteToProjectTool](file:///Users/victor.herrera/Workspace/tasklist-tool/.apm/Memory/Phase_06_LM_Tool_Migration/Task_6_2_Implement_PromoteToProjectTool.md)
+  - [Task 6.3 - Wiring and Cleanup in extension](file:///Users/victor.herrera/Workspace/tasklist-tool/.apm/Memory/Phase_06_LM_Tool_Migration/Task_6_3_Wiring_and_Cleanup_in_extension.md)
+  - [Task 6.4 - Update Hierarchical Verification Suite](file:///Users/victor.herrera/Workspace/tasklist-tool/.apm/Memory/Phase_06_LM_Tool_Migration/Task_6_4_Update_Hierarchical_Verification_Suite.md)

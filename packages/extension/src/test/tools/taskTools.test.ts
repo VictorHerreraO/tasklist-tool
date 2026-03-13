@@ -11,6 +11,8 @@ import { DeactivateTaskTool } from '../../tools/deactivateTaskTool.js';
 import { StartTaskTool } from '../../tools/startTaskTool.js';
 import { CloseTaskTool } from '../../tools/closeTaskTool.js';
 import { IListTasksParams, ICreateTaskParams, ITaskIdParams } from '../../tools/interfaces.js';
+import { PromoteToProjectTool } from '../../tools/promoteToProjectTool.js';
+
 
 // ─── Test Helpers ────────────────────────────────────────────────────────────
 
@@ -699,6 +701,81 @@ suite('Task Management Tools', () => {
             );
             const msg = prep.confirmationMessages?.message as vscode.MarkdownString;
             assert.ok(msg.value.includes('done-task'), msg.value);
+        });
+    });
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // PromoteToProjectTool
+    // ═══════════════════════════════════════════════════════════════════════
+
+    suite('PromoteToProjectTool', () => {
+        let tool: PromoteToProjectTool;
+
+        setup(() => {
+            tool = new PromoteToProjectTool(manager);
+        });
+
+        // ── prepareInvocation ────────────────────────────────────────────
+
+        test('prepareInvocation returns correct confirmation messages sharing the taskId', async () => {
+            const taskId = 'test-task';
+            const prep = await tool.prepareInvocation(
+                makePrepareOptions<ITaskIdParams>({ taskId }),
+                NEVER_TOKEN
+            );
+            assert.ok((prep.invocationMessage as string).includes(taskId), 'invocationMessage should include taskId');
+            assert.strictEqual(prep.confirmationMessages?.title, 'Promote to Project');
+            const msg = prep.confirmationMessages?.message as vscode.MarkdownString;
+            assert.ok(msg.value.includes(taskId), 'confirmation message should include taskId');
+        });
+
+        // ── invoke: happy-path ───────────────────────────────────────────
+
+        test('invoke promotes a task, returns a success message, and correctly calls TaskManager', async () => {
+            const taskId = 'to-promote';
+            manager.createTask(taskId);
+
+            const result = await tool.invoke(
+                makeInvokeOptions<ITaskIdParams>({ taskId }),
+                NEVER_TOKEN
+            );
+
+            const text = firstTextPart(result);
+            assert.ok(text.includes(taskId), text);
+            assert.ok(text.includes('successfully promoted'), text);
+
+            // Verify TaskManager state
+            const tasks = manager.listTasks();
+            const task = tasks.find(t => t.id === taskId);
+            assert.strictEqual(task?.type, 'project');
+        });
+
+        // ── invoke: error handling ───────────────────────────────────────
+
+        test('invoke throws helpful error for "task not found"', async () => {
+            await assert.rejects(
+                () => tool.invoke(makeInvokeOptions<ITaskIdParams>({ taskId: 'ghost' }), NEVER_TOKEN),
+                (err: Error) => {
+                    assert.ok(err.message.includes('ghost'), err.message);
+                    assert.ok(err.message.includes('not found'), err.message);
+                    assert.ok(err.message.includes('list_tasks'), err.message);
+                    return true;
+                }
+            );
+        });
+
+        test('invoke throws helpful error for "already a project"', async () => {
+            const taskId = 'already-proj';
+            manager.createTask(taskId, 'project');
+
+            await assert.rejects(
+                () => tool.invoke(makeInvokeOptions<ITaskIdParams>({ taskId }), NEVER_TOKEN),
+                (err: Error) => {
+                    assert.ok(err.message.includes(taskId), err.message);
+                    assert.ok(err.message.includes('already a project'), err.message);
+                    return true;
+                }
+            );
         });
     });
 });

@@ -1,6 +1,6 @@
 # Tasklist Tool – Hierarchical Task Management - APM Implementation Plan
 **Memory Strategy:** Dynamic-MD
-**Last Modification:** Task 6.2 completed; PromoteToProjectTool logic implemented.
+**Last Modification:** Phase 6 complete; PromoteToProject feature migrated to LM Tool. Added Phase 7 for tool parity.
 **Project Overview:** This project introduces a two-level hierarchy (Projects and Subtasks) to the Tasklist Tool. Following the initial implementation, the "Promote to Project" functionality is being migrated from a standard VS Code command to a Language Model (LM) Tool for improved agentic integration and consistency.
 
 ## Phase 1: Test Infrastructure & Baseline
@@ -111,7 +111,7 @@
 4. Implement `invoke` calling `taskManager.promoteTaskToProject`.
 5. Return recovery-oriented error messages on failure (e.g., "Check taskId via list_tasks").
 
-### Task 6.3 – Wiring and Cleanup in extension.ts - Agent_Extension
+### Task 6.3 – Wiring and Cleanup in extension.ts - Agent_Extension (Completed)
 - **Objective:** Integrate the tool and remove the old command-based logic.
 - **Output:** Updated `packages/extension/src/extension.ts`.
 - **Guidance:** **Depends on: Task 6.2 Output**
@@ -119,10 +119,35 @@
 - Remove `vscode.commands.registerCommand` for `tasklist.promoteToProject`.
 - Cleanup unused imports like `TaskTreeItem`.
 
-### Task 6.4 – Update Hierarchical Verification Suite - Agent_QA
+### Task 6.4 – Update Hierarchical Verification Suite - Agent_QA (Completed)
 - **Objective:** Ensure the system functions correctly through the new interaction model.
 - **Output:** Passing integration tests.
 - **Guidance:** **Depends on: Task 6.3 Output**
 1. Identify and refactor tests in `packages/extension/src/test/integration/` involving promotion.
 2. Update tests to verify promotion via LM Tool invocation or Core state.
 3. Validate complete hierarchical workflow ensures Tree View refresh logic still holds.
+
+## Phase 7: Hierarchical Tool Parity
+### Task 7.1 – Update create_task & list_tasks Schemas - Agent_Extension
+- **Objective:** Align extension LM tool schemas with core hierarchical capabilities.
+- **Output:** Updated `packages/extension/package.json`.
+- **Guidance:** 
+- Update `create_task` inputSchema to include optional `parentTaskId` (string) and `type` ('task' | 'project').
+- Update `list_tasks` inputSchema to include optional `parentTaskId` (string).
+- Ensure descriptions mirror the established hierarchical behavior.
+
+### Task 7.2 – Implement Hierarchical Logic in LM Tools - Agent_Extension
+- **Objective:** Logic update for create/list tools to handle parent/child relationships.
+- **Output:** Updated `createTaskTool.ts` and `listTasksTool.ts`.
+- **Guidance:** **Depends on: Task 7.1 Output**
+- Update `createTaskTool.ts` to pass `type` and `parentTaskId` to `TaskManager.createTask`.
+- Update `listTasksTool.ts` to pass `parentTaskId` to `TaskManager.listTasks`.
+- Add validation logic to ensure tasks are created within valid projects.
+
+### Task 7.3 – Final Hierarchy Verification - Agent_QA
+- **Objective:** End-to-end verification of the full hierarchical toolset.
+- **Output:** Comprehensive passing test suite.
+- **Guidance:** **Depends on: Task 7.2 Output**
+- Add tests for creating subtasks via `create_task`.
+- Add tests for listing subtasks via `list_tasks`.
+- Verify tree view correctly responds to LM-created subtasks.
