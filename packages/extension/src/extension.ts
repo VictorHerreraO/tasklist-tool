@@ -60,11 +60,17 @@ export async function activate(context: vscode.ExtensionContext) {
             // Auto-reveal active task
             if (data.event === TaskEventType.Activated) {
                 // Focus the active task in the tree
-                const task = taskManager.getActiveTask();
-                if (task) {
-                    // Note: reveal requires the TaskTreeItem. 
-                    // For now, we refresh and assume the user can see the highlighted (active) label.
-                    // A full reveal implementation would require a parent-traversal strategy in TaskTreeProvider.
+                const item = await treeProvider.getItemForId(data.taskId);
+                if (item) {
+                    // Use a small delay to allow the tree to refresh before revealing
+                    // This ensures the item exists in the tree's internal model if it was just created/moved
+                    setTimeout(() => {
+                        treeView.reveal(item, {
+                            select: true,
+                            focus: true,
+                            expand: true
+                        });
+                    }, 100);
                 }
             }
         });

@@ -48,6 +48,41 @@ export class TaskTreeProvider implements vscode.TreeDataProvider<TaskTreeItem> {
 
         return tasks.map(task => new TaskTreeItem(task, task.id === activeTask?.id));
     }
+
+    /**
+     * Required for treeView.reveal to work. 
+     * Returns the parent of the given element.
+     */
+    async getParent(element: TaskTreeItem): Promise<TaskTreeItem | undefined> {
+        if (!this.taskManager || !element.task.parentTaskId) {
+            return undefined;
+        }
+
+        const parentId = element.task.parentTaskId;
+        const result = this.taskManager.findEntryGlobally(parentId);
+        if (result) {
+            const activeTask = this.taskManager.getActiveTask();
+            return new TaskTreeItem(result.entry, result.entry.id === activeTask?.id);
+        }
+        return undefined;
+    }
+
+    /**
+     * Helper to find or create a TaskTreeItem for a specific taskId.
+     * Used by the reveal logic to find the entry point.
+     */
+    async getItemForId(taskId: string): Promise<TaskTreeItem | undefined> {
+        if (!this.taskManager) {
+            return undefined;
+        }
+
+        const result = this.taskManager.findEntryGlobally(taskId);
+        if (result) {
+            const activeTask = this.taskManager.getActiveTask();
+            return new TaskTreeItem(result.entry, result.entry.id === activeTask?.id);
+        }
+        return undefined;
+    }
 }
 
 /**
