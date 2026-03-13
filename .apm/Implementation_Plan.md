@@ -1,6 +1,6 @@
 # Tasklist Tool – Hierarchical Task Management - APM Implementation Plan
 **Memory Strategy:** Dynamic-MD
-**Last Modification:** Task 7.1 completed; LM schemas updated for hierarchy support.
+**Last Modification:** Task 7.2 completed; Hierarchical logic implemented in create/list tools.
 **Project Overview:** This project introduces a two-level hierarchy (Projects and Subtasks) to the Tasklist Tool. Following the initial implementation, the "Promote to Project" functionality is being migrated from a standard VS Code command to a Language Model (LM) Tool for improved agentic integration and consistency.
 
 ## Phase 1: Test Infrastructure & Baseline
@@ -136,7 +136,7 @@
 - Update `list_tasks` inputSchema to include optional `parentTaskId` (string).
 - Ensure descriptions mirror the established hierarchical behavior.
 
-### Task 7.2 – Implement Hierarchical Logic in LM Tools - Agent_Extension
+### Task 7.2 – Implement Hierarchical Logic in LM Tools - Agent_Extension (Completed)
 - **Objective:** Logic update for create/list tools to handle parent/child relationships.
 - **Output:** Updated `createTaskTool.ts` and `listTasksTool.ts`.
 - **Guidance:** **Depends on: Task 7.1 Output**
