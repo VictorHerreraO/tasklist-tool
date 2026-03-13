@@ -2,13 +2,9 @@ import * as assert from 'assert';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
-import { TaskManager, TaskStatus } from '@tasklist/core';
+import * as vscode from 'vscode';
+import { TaskManager } from '@tasklist/core';
 import { TaskTreeProvider, TaskTreeItem } from '../../views/TaskTreeProvider';
-
-// Mock vscode as needed or rely on the fact that we are testing logic
-// Since we are running in a node environment for unit tests, we might need a mock for vscode
-// But TaskTreeItem extends vscode.TreeItem, which might throw if vscode is not defined.
-// However, typically vscode-test-cli handles the environment.
 
 suite('TaskTreeProvider Logic', () => {
     let workspaceRoot: string;
@@ -33,7 +29,7 @@ suite('TaskTreeProvider Logic', () => {
     });
 
     test('getParent returns the correct project item for subtasks', async () => {
-        const project = manager.createTask('my-project', 'project');
+        manager.createTask('my-project', 'project');
         const subtask = manager.createTask('my-subtask', 'task', 'my-project');
 
         const subItem = new TaskTreeItem(subtask);
@@ -50,5 +46,53 @@ suite('TaskTreeProvider Logic', () => {
 
         assert.ok(item, 'Item should be found');
         assert.strictEqual(item!.task.id, 'target-task');
+    });
+
+    test('getItemForId returns undefined for non-existent taskId', async () => {
+        const item = await provider.getItemForId('ghost-task');
+        assert.strictEqual(item, undefined);
+    });
+
+    suite('TaskTreeItem Visual State', () => {
+        test('active task has correct label and description', () => {
+            const entry = manager.createTask('active-task');
+            manager.activateTask('active-task');
+            const item = new TaskTreeItem(entry, true);
+
+            assert.strictEqual(item.label, 'active-task (active)');
+            assert.strictEqual(item.description, 'open • Active');
+        });
+
+        test('active task has :active suffix in contextValue', () => {
+            const entry = manager.createTask('active-task');
+            const item = new TaskTreeItem(entry, true);
+            assert.strictEqual(item.contextValue, 'task:open:active');
+        });
+
+        test('closed task has pass-filled icon', () => {
+            manager.createTask('closed-task');
+            manager.start_task('closed-task');
+            const entry = manager.close_task('closed-task');
+            const item = new TaskTreeItem(entry);
+            const icon = item.iconPath as vscode.ThemeIcon;
+            assert.strictEqual(icon.id, 'pass-filled');
+        });
+
+        test('in-progress task has sync~spin icon', () => {
+            manager.createTask('ip-task');
+            const entry = manager.start_task('ip-task');
+            const item = new TaskTreeItem(entry);
+            const icon = item.iconPath as vscode.ThemeIcon;
+            assert.strictEqual(icon.id, 'sync~spin');
+        });
+
+        test('tooltip contains Markdown with task metadata', () => {
+            const entry = manager.createTask('meta-task');
+            const item = new TaskTreeItem(entry);
+            const tooltip = item.tooltip as vscode.MarkdownString;
+            assert.ok(tooltip.value.includes('### **Task:** meta-task'));
+            assert.ok(tooltip.value.includes('**Status:** OPEN'));
+            assert.ok(tooltip.value.includes('*Click to open details*'));
+        });
     });
 });
