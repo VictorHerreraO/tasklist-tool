@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.2] - 2026-03-12
+
+### Fixed
+- **View Registration Robustness**: Refactored `activate()` to register the Tree Data Provider synchronously at the very start of activation. This prevents "no data provider" errors caused by early returns (e.g., no workspace) or delays in asynchronous service initialization.
+
+## [0.2.1] - 2026-03-12
+
+### Fixed
+- **View Activation**: Added `onView:tasklist-tree` activation event to extension manifest.
+
 ## [0.2.0] - 2026-03-12
 
 ### Added
