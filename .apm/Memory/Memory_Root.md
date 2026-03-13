@@ -66,3 +66,14 @@
   - [Task 6.2 - Implement PromoteToProjectTool](file:///Users/victor.herrera/Workspace/tasklist-tool/.apm/Memory/Phase_06_LM_Tool_Migration/Task_6_2_Implement_PromoteToProjectTool.md)
   - [Task 6.3 - Wiring and Cleanup in extension](file:///Users/victor.herrera/Workspace/tasklist-tool/.apm/Memory/Phase_06_LM_Tool_Migration/Task_6_3_Wiring_and_Cleanup_in_extension.md)
   - [Task 6.4 - Update Hierarchical Verification Suite](file:///Users/victor.herrera/Workspace/tasklist-tool/.apm/Memory/Phase_06_LM_Tool_Migration/Task_6_4_Update_Hierarchical_Verification_Suite.md)
+
+---
+## Phase 07 – Hierarchical Tool Parity Summary
+* Achieved full hierarchical functional parity for the extension's Language Model (LM) tools.
+* Updated `create_task` and `list_tasks` schemas and logic to support `type` and `parentTaskId` parameters.
+* Verified the end-to-end multi-tier workflow, including subtask creation and project-based filtering via LM Tool interaction.
+* Involved Agents: Agent_Extension, Agent_QA
+* Logs:
+  - [Task 7.1 - Update create_task & list_tasks Schemas](file:///Users/victor.herrera/Workspace/tasklist-tool/.apm/Memory/Phase_07_Hierarchical_Tool_Parity/Task_7_1_Update_create_task_list_tasks_Schemas.md)
+  - [Task 7.2 - Implement Hierarchical Logic in LM Tools](file:///Users/victor.herrera/Workspace/tasklist-tool/.apm/Memory/Phase_07_Hierarchical_Tool_Parity/Task_7_2_Implement_Hierarchical_Logic_in_LM_Tools.md)
+  - [Task 7.3 - Final Hierarchy Verification](file:///Users/victor.herrera/Workspace/tasklist-tool/.apm/Memory/Phase_07_Hierarchical_Tool_Parity/Task_7_3_Final_Hierarchy_Verification.md)
