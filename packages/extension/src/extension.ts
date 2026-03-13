@@ -11,6 +11,8 @@ import { ListArtifactsTool } from './tools/listArtifactsTool.js';
 import { GetArtifactTool } from './tools/getArtifactTool.js';
 import { UpdateArtifactTool } from './tools/updateArtifactTool.js';
 import { RegisterArtifactTypeTool } from './tools/registerArtifactTypeTool.js';
+import { PromoteToProjectTool } from './tools/promoteToProjectTool.js';
+import { TaskTreeProvider } from './views/TaskTreeProvider.js';
 
 /**
  * Activates the extension.
@@ -36,7 +38,13 @@ export async function activate(context: vscode.ExtensionContext) {
     await registry.initialize();
     const artifactService = new ArtifactService(workspaceRoot, taskManager, registry);
 
-    // Register all 11 LM tools.
+    // Register Tree Provider
+    const treeProvider = new TaskTreeProvider(taskManager);
+    context.subscriptions.push(
+        vscode.window.registerTreeDataProvider('tasklist-tree', treeProvider)
+    );
+
+    // Register all 12 LM tools.
     context.subscriptions.push(
         vscode.lm.registerTool('list_tasks', new ListTasksTool(taskManager)),
         vscode.lm.registerTool('create_task', new CreateTaskTool(taskManager)),
@@ -44,6 +52,7 @@ export async function activate(context: vscode.ExtensionContext) {
         vscode.lm.registerTool('deactivate_task', new DeactivateTaskTool(taskManager)),
         vscode.lm.registerTool('start_task', new StartTaskTool(taskManager)),
         vscode.lm.registerTool('close_task', new CloseTaskTool(taskManager)),
+        vscode.lm.registerTool('promote_to_project', new PromoteToProjectTool(taskManager)),
         vscode.lm.registerTool('list_artifact_types', new ListArtifactTypesTool(registry)),
         vscode.lm.registerTool('list_artifacts', new ListArtifactsTool(taskManager, artifactService)),
         vscode.lm.registerTool('get_artifact', new GetArtifactTool(taskManager, artifactService)),

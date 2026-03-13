@@ -1,7 +1,10 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import { fileURLToPath } from 'url';
 import * as yaml from 'js-yaml';
 import { ArtifactType } from '../models/artifact.js';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 /** Shape expected in the YAML frontmatter of each `.ai.md` template file. */
 interface TemplateFrontmatter {

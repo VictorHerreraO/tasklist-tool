@@ -1,41 +1,79 @@
-# Tasklist Tool – Project Restructuring & MCP Server – APM Memory Root
+# Tasklist Tool – Hierarchical Task Management – APM Memory Root
 **Memory Strategy:** Dynamic-MD
-**Project Overview:** Restructure the existing VS Code extension (TypeScript) into a monorepo workspace to extract the core LM Tool logic into a shared package. Then, implement a new Node/TypeScript MCP Server providing 1-to-1 feature parity with the extension's task and artifact management capabilities.
+**Project Overview:** This project introduces a two-level hierarchy (Projects and Subtasks) to the Tasklist Tool. Following the core implementation, the system is being migrated to utilize VS Code Language Model (LM) Tools for the "Promote to Project" feature, enhancing agentic consistency and integration.
 
-## Phase 01 – Monorepo Restructuring & Core Extraction Summary
-* Successfully converted the repository into an npm monorepo with `@tasklist/core` and `tasklist-tool` (extension) workspaces.
-* Extracted core business logic (services, models, templates) into `packages/core`, fully decoupling it from the VS Code API.
-* Migrated the extension code and tools to `packages/extension`, updating all 19 internal files to consume the core package.
-* Validated the restructure with **251/251 passing tests**, ensuring 100% feature parity and system stability.
-* Involved Agents: Agent_Core, Agent_Extension
+## Phase 01 – Test Infrastructure & Baseline Summary
+* Successfully established a standalone Mocha/Chai test environment in `packages/core` to enable independent logic verification.
+* Relocated and ESM-refactored 54 tests for `TaskManager` and `ArtifactService` from the extension package, ensuring high reliability for core services.
+* Resolved critical ESM compatibility issues (e.g., `__dirname` shim) and restored missing template resources to the source directory.
+* Involved Agents: Agent_QA, Agent_Core
 * Logs:
-  * [Task 1.1 - Setup Workspace](file:///Users/victor.herrera/Workspace/tasklist-tool/.apm/Memory/Phase_01_Monorepo_Core_Extraction/Task_1_1_Setup_Workspace.md)
-  * [Task 1.2 - Extract Core Logic](file:///Users/victor.herrera/Workspace/tasklist-tool/.apm/Memory/Phase_01_Monorepo_Core_Extraction/Task_1_2_Extract_Core_Logic.md)
-  * [Task 1.3 - Migrate Extension and Validate](file:///Users/victor.herrera/Workspace/tasklist-tool/.apm/Memory/Phase_01_Monorepo_Core_Extraction/Task_1_3_Migrate_Extension_and_Validate.md)
+  - [Task 1.1 - Core Test Environment Setup](file:///Users/victor.herrera/Workspace/tasklist-tool/.apm/Memory/Phase_01_Test_Infrastructure_Baseline/Task_1_1_Core_Test_Environment_Setup.md)
+  - [Task 1.2 - Relocate TaskManager Tests](file:///Users/victor.herrera/Workspace/tasklist-tool/.apm/Memory/Phase_01_Test_Infrastructure_Baseline/Task_1_2_Relocate_TaskManager_Tests.md)
+  - [Task 1.3 - Relocate ArtifactService Tests](file:///Users/victor.herrera/Workspace/tasklist-tool/.apm/Memory/Phase_01_Test_Infrastructure_Baseline/Task_1_3_Relocate_ArtifactService_Tests.md)
 
-## Phase 02 – MCP Server Implementation Summary
-* Scaffolded `packages/mcp` as ESM with `@modelcontextprotocol/sdk ^1.6.1`, `zod`, and `STDIO` transport via `McpServer` + `StdioServerTransport`.
-* Implemented a clean 3-module structure: `server.ts` (singleton), `workspaceRoot.ts` (service instances resolved from `TASKLIST_WORKSPACE` env var), and `src/tools/` (side-effect registrations).
-* Registered all 11 MCP tools (6 task lifecycle + 5 artifact management) with full `zod` input schemas, active-task fallback on optional `taskId` args, and actionable LLM-friendly error messages.
-* Identified `ArtifactRegistry.extensionRoot` API quirk (constructor arg unused in `initialize()`); documented and safely worked around.
-* Build status: `npm run compile` clean; runtime smoke test confirmed server starts over STDIO.
-* Involved Agent: Agent_MCP
-* Logs:
-  * [Task 2.1 - MCP Server Scaffolding](file:///Users/victor.herrera/Workspace/tasklist-tool/.apm/Memory/Phase_02_MCP_Server_Implementation/Task_2_1_MCP_Server_Scaffolding.md)
-  * [Task 2.2 - Implement MCP Tool Wrappers](file:///Users/victor.herrera/Workspace/tasklist-tool/.apm/Memory/Phase_02_MCP_Server_Implementation/Task_2_2_Implement_MCP_Tool_Wrappers.md)
 
-## Phase 03 – Final Testing & Execution Scripting Summary
-* Handlers for tasks and artifacts were extracted to pure functions (`src/handlers/`), allowing clean isolation testing.
-* Test suite configured using Mocha (with TDD UI), resulting in 68 passing tests simulating all 11 MCP tool operations smoothly.
-* TypeScript configs (`tsconfig.json`) and MCP execution paths (`bin` entry, `package.json` main/types exports) were finalized given `rootDir` adjustments.
-* Integrated `esbuild` in `packages/extension` to bundle dependencies, resolving `EISDIR` errors during packaging and optimizing extension bundle size.
-* Configured `.vscodeignore` and added missing `repository` manifests to satisfy `vsce` validation.
-* Created a symbolic link for `LICENSE` in the extension package to maintain a single source of truth.
-* Clean full monorepo build confirmed: `npm run compile --workspaces`.
-* Full test suite across monorepo tested completely effectively: 319 passing tests in total.
-* Bootured integration smoke test over STDIO confirmed successful setup for external consumption via `tasklist-mcp-server`.
-* Involved Agents: Agent_MCP, Agent_Core, Agent_AdHoc_Debug
+---
+## Phase 02 – Foundation (Models & Manager) Summary
+* Successfully introduced `type` ('task' | 'project') and `parentTaskId` fields to core task models.
+* Enhanced `TaskManager` with a migration layer for legacy tasks and hierarchical filtering in `listTasks`, ensuring top-level visibility by default.
+* Maintained 100% test parity with 62 passing core tests.
+* Involved Agents: Agent_Core
 * Logs:
-  * [Task 3.1 - MCP Server Testing](file:///Users/victor.herrera/Workspace/tasklist-tool/.apm/Memory/Phase_03_Final_Testing_Execution_Scripting/Task_3_1_MCP_Server_Testing.md)
-  * [Task 3.2 - Execution Script Finalization & Verification](file:///Users/victor.herrera/Workspace/tasklist-tool/.apm/Memory/Phase_03_Final_Testing_Execution_Scripting/Task_3_2_Execution_Script_Finalization_Verification.md)
-  * [Ad-Hoc - Fix VSCE Packaging](file:///Users/victor.herrera/Workspace/tasklist-tool/.apm/Memory/AdHoc_Fix_VSCE_Packaging.md)
+  - [Task 2.1 - Update Task Models](file:///Users/victor.herrera/Workspace/tasklist-tool/.apm/Memory/Phase_02_Foundation_Models_Manager/Task_2_1_Update_Task_Models.md)
+  - [Task 2.2 - TaskManager Core Update](file:///Users/victor.herrera/Workspace/tasklist-tool/.apm/Memory/Phase_02_Foundation_Models_Manager/Task_2_2_TaskManager_Core_Update.md)
+
+
+---
+## Phase 03 – Logic (Promotion & Nested Resolution) Summary
+* Implemented `promoteTaskToProject` logic, allowing tasks to become containers with their own nested `index.json`.
+* Enabled subtask management in `TaskManager`, including global task resolution across multiple indices for all state transition methods.
+* Updated `ArtifactService` with hierarchical path resolution, nesting subtask artifacts within their parent project directories.
+* Involved Agents: Agent_Core
+* Logs:
+  - [Task 3.1 - Implement Task Promotion Logic](file:///Users/victor.herrera/Workspace/tasklist-tool/.apm/Memory/Phase_03_Logic_Promotion_Nested_Resolution/Task_3_1_Implement_Task_Promotion_Logic.md)
+  - [Task 3.2 - Nested Index Management](file:///Users/victor.herrera/Workspace/tasklist-tool/.apm/Memory/Phase_03_Logic_Promotion_Nested_Resolution/Task_3_2_Nested_Index_Management.md)
+  - [Task 3.3 - Artifact Path Resolution Update](file:///Users/victor.herrera/Workspace/tasklist-tool/.apm/Memory/Phase_03_Logic_Promotion_Nested_Resolution/Task_3_3_Artifact_Path_Resolution_Update.md)
+
+
+---
+## Phase 04 – Integration (MCP Tools & Testing) Summary
+* Successfully exposed hierarchical task management (projects, subtasks, promotion) via the MCP server with updated tool schemas and handlers in `packages/mcp`.
+* Rebuilt `@tasklist/core` and `@tasklist/mcp` to ensure cross-package type synchronization.
+* Involved Agents: Agent_MCP
+* Logs:
+  - [Task 4.1 - MCP Tool Definition Update](file:///Users/victor.herrera/Workspace/tasklist-tool/.apm/Memory/Phase_04_Integration_MCP_Testing/Task_4_1_MCP_Tool_Definition_Update.md)
+  - [Task 4.2 - Hierarchical Verification Suite](file:///Users/victor.herrera/Workspace/tasklist-tool/.apm/Memory/Phase_04_Integration_MCP_Testing/Task_4_2_Hierarchical_Verification_Suite.md)
+  - [Task 4.3 - Documentation Update](file:///Users/victor.herrera/Workspace/tasklist-tool/.apm/Memory/Phase_04_Integration_MCP_Testing/Task_4_3_Documentation_Update.md)
+
+---
+## Phase 05 – VS Code Extension Integration Summary
+* Successfully updated the VS Code Tree View to render hierarchical tasks (Projects and Subtasks) with distinct icons and collapsible states.
+* Registered the `TaskTreeProvider` in the extension entry point.
+* Involved Agents: Agent_Extension
+* Logs:
+  - [Task 5.1 - Update Extension Tree Provider](file:///Users/victor.herrera/Workspace/tasklist-tool/.apm/Memory/Phase_05_VS_Code_Extension_Integration/Task_5_1_Update_Extension_Tree_Provider.md)
+  - [Task 5.2 - Implement "Promote to Project" Command](file:///Users/victor.herrera/Workspace/tasklist-tool/.apm/Memory/Phase_05_VS_Code_Extension_Integration/Task_5_2_Implement_Promote_to_Project_Command.md)
+---
+## Phase 06 – Language Model Tool Migration Summary
+* Successfully migrated the "Promote to Project" feature from a manual VS Code command to a Language Model (LM) Tool.
+* Implemented the `PromoteToProjectTool` logic with robust error handling and user confirmation flows.
+* Integrated comprehensive unit tests for the new LM tool into the extension's test suite.
+* Identified consistency gaps in `create_task` and `list_tasks` LM tools regarding `parentTaskId` support.
+* Involved Agents: Agent_Extension, Agent_QA
+* Logs:
+  - [Task 6.1 - Define promote_to_project in package.json](file:///Users/victor.herrera/Workspace/tasklist-tool/.apm/Memory/Phase_06_LM_Tool_Migration/Task_6_1_Define_promote_to_project_in_package_json.md)
+  - [Task 6.2 - Implement PromoteToProjectTool](file:///Users/victor.herrera/Workspace/tasklist-tool/.apm/Memory/Phase_06_LM_Tool_Migration/Task_6_2_Implement_PromoteToProjectTool.md)
+  - [Task 6.3 - Wiring and Cleanup in extension](file:///Users/victor.herrera/Workspace/tasklist-tool/.apm/Memory/Phase_06_LM_Tool_Migration/Task_6_3_Wiring_and_Cleanup_in_extension.md)
+  - [Task 6.4 - Update Hierarchical Verification Suite](file:///Users/victor.herrera/Workspace/tasklist-tool/.apm/Memory/Phase_06_LM_Tool_Migration/Task_6_4_Update_Hierarchical_Verification_Suite.md)
+
+---
+## Phase 07 – Hierarchical Tool Parity Summary
+* Achieved full hierarchical functional parity for the extension's Language Model (LM) tools.
+* Updated `create_task` and `list_tasks` schemas and logic to support `type` and `parentTaskId` parameters.
+* Verified the end-to-end multi-tier workflow, including subtask creation and project-based filtering via LM Tool interaction.
+* Involved Agents: Agent_Extension, Agent_QA
+* Logs:
+  - [Task 7.1 - Update create_task & list_tasks Schemas](file:///Users/victor.herrera/Workspace/tasklist-tool/.apm/Memory/Phase_07_Hierarchical_Tool_Parity/Task_7_1_Update_create_task_list_tasks_Schemas.md)
+  - [Task 7.2 - Implement Hierarchical Logic in LM Tools](file:///Users/victor.herrera/Workspace/tasklist-tool/.apm/Memory/Phase_07_Hierarchical_Tool_Parity/Task_7_2_Implement_Hierarchical_Logic_in_LM_Tools.md)
+  - [Task 7.3 - Final Hierarchy Verification](file:///Users/victor.herrera/Workspace/tasklist-tool/.apm/Memory/Phase_07_Hierarchical_Tool_Parity/Task_7_3_Final_Hierarchy_Verification.md)

@@ -11,6 +11,10 @@ import { DeactivateTaskTool } from '../../tools/deactivateTaskTool.js';
 import { StartTaskTool } from '../../tools/startTaskTool.js';
 import { CloseTaskTool } from '../../tools/closeTaskTool.js';
 import { IListTasksParams, ICreateTaskParams, ITaskIdParams } from '../../tools/interfaces.js';
+import { PromoteToProjectTool } from '../../tools/promoteToProjectTool.js';
+import { TaskTreeProvider } from '../../views/TaskTreeProvider.js';
+
+
 
 // ─── Test Helpers ────────────────────────────────────────────────────────────
 
@@ -209,6 +213,43 @@ suite('Task Management Tools', () => {
             assert.ok((prep.invocationMessage as string).includes('open'), prep.invocationMessage as string);
         });
 
+        test('prepareInvocation invocationMessage includes parentTaskId when provided', async () => {
+            const prep = await tool.prepareInvocation(
+                makePrepareOptions<IListTasksParams>({ parentTaskId: 'p1' }),
+                NEVER_TOKEN
+            );
+            assert.ok((prep.invocationMessage as string).includes('p1'), prep.invocationMessage as string);
+        });
+
+        test('invoke lists only top-level tasks by default', async () => {
+            manager.createTask('p1', 'project');
+            manager.createTask('s1', 'task', 'p1');
+            const result = await tool.invoke(makeInvokeOptions<IListTasksParams>({}), NEVER_TOKEN);
+            const text = firstTextPart(result);
+            assert.ok(text.includes('p1'), text);
+            assert.ok(!text.includes('s1'), text);
+        });
+
+        test('invoke lists subtasks when parentTaskId is provided', async () => {
+            manager.createTask('p1', 'project');
+            manager.createTask('s1', 'task', 'p1');
+            const result = await tool.invoke(
+                makeInvokeOptions<IListTasksParams>({ parentTaskId: 'p1' }),
+                NEVER_TOKEN
+            );
+            const text = firstTextPart(result);
+            assert.ok(text.includes('s1'), text);
+            assert.ok(!text.includes('p1'), text);
+        });
+
+        test('invoke output correctly distinguishes projects with a suffix', async () => {
+            manager.createTask('proj-a', 'project');
+            const result = await tool.invoke(makeInvokeOptions<IListTasksParams>({}), NEVER_TOKEN);
+            const text = firstTextPart(result);
+            assert.ok(text.includes('proj-a'), text);
+            assert.ok(text.includes('(Project)'), text);
+        });
+
         test('prepareInvocation returns confirmationMessages', async () => {
             const prep = await tool.prepareInvocation(makePrepareOptions<IListTasksParams>({}), NEVER_TOKEN);
             assert.ok(prep.confirmationMessages, 'confirmationMessages should be present');
@@ -259,6 +300,28 @@ suite('Task Management Tools', () => {
             assert.strictEqual(tasks[0].id, 'persisted-task');
         });
 
+        test('invoke creates a project when type is specified', async () => {
+            await tool.invoke(
+                makeInvokeOptions<ICreateTaskParams>({ taskId: 'new-proj', type: 'project' }),
+                NEVER_TOKEN
+            );
+            const tasks = manager.listTasks();
+            assert.strictEqual(tasks[0].id, 'new-proj');
+            assert.strictEqual(tasks[0].type, 'project');
+        });
+
+        test('invoke creates a subtask when parentTaskId is provided', async () => {
+            manager.createTask('parent', 'project');
+            await tool.invoke(
+                makeInvokeOptions<ICreateTaskParams>({ taskId: 'child', parentTaskId: 'parent' }),
+                NEVER_TOKEN
+            );
+            const subtasks = manager.listTasks(undefined, 'parent');
+            assert.strictEqual(subtasks.length, 1);
+            assert.strictEqual(subtasks[0].id, 'child');
+            assert.strictEqual(subtasks[0].parentTaskId, 'parent');
+        });
+
         // ── invoke: error handling ───────────────────────────────────────
 
         test('invoke throws for an empty taskId', async () => {
@@ -283,6 +346,35 @@ suite('Task Management Tools', () => {
                         err.message.includes('list_tasks') || err.message.includes('different'),
                         `Expected corrective guidance in: "${err.message}"`
                     );
+                    return true;
+                }
+            );
+        });
+
+        test('invoke throws helpful error for non-existent parentTaskId', async () => {
+            await assert.rejects(
+                () => tool.invoke(
+                    makeInvokeOptions<ICreateTaskParams>({ taskId: 'sub', parentTaskId: 'ghost' }),
+                    NEVER_TOKEN
+                ),
+                (err: Error) => {
+                    assert.ok(err.message.includes('ghost'), err.message);
+                    assert.ok(err.message.includes('not found'), err.message);
+                    return true;
+                }
+            );
+        });
+
+        test('invoke throws helpful error for non-project parentTaskId', async () => {
+            manager.createTask('not-a-proj', 'task');
+            await assert.rejects(
+                () => tool.invoke(
+                    makeInvokeOptions<ICreateTaskParams>({ taskId: 'sub', parentTaskId: 'not-a-proj' }),
+                    NEVER_TOKEN
+                ),
+                (err: Error) => {
+                    assert.ok(err.message.includes('not-a-proj'), err.message);
+                    assert.ok(err.message.includes('not a project'), err.message);
                     return true;
                 }
             );
@@ -699,6 +791,128 @@ suite('Task Management Tools', () => {
             );
             const msg = prep.confirmationMessages?.message as vscode.MarkdownString;
             assert.ok(msg.value.includes('done-task'), msg.value);
+        });
+    });
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // PromoteToProjectTool
+    // ═══════════════════════════════════════════════════════════════════════
+
+    suite('PromoteToProjectTool', () => {
+        let tool: PromoteToProjectTool;
+
+        setup(() => {
+            tool = new PromoteToProjectTool(manager);
+        });
+
+        // ── prepareInvocation ────────────────────────────────────────────
+
+        test('prepareInvocation returns correct confirmation messages sharing the taskId', async () => {
+            const taskId = 'test-task';
+            const prep = await tool.prepareInvocation(
+                makePrepareOptions<ITaskIdParams>({ taskId }),
+                NEVER_TOKEN
+            );
+            assert.ok((prep.invocationMessage as string).includes(taskId), 'invocationMessage should include taskId');
+            assert.strictEqual(prep.confirmationMessages?.title, 'Promote to Project');
+            const msg = prep.confirmationMessages?.message as vscode.MarkdownString;
+            assert.ok(msg.value.includes(taskId), 'confirmation message should include taskId');
+        });
+
+        // ── invoke: happy-path ───────────────────────────────────────────
+
+        test('invoke promotes a task, returns a success message, and correctly calls TaskManager', async () => {
+            const taskId = 'to-promote';
+            manager.createTask(taskId);
+
+            const result = await tool.invoke(
+                makeInvokeOptions<ITaskIdParams>({ taskId }),
+                NEVER_TOKEN
+            );
+
+            const text = firstTextPart(result);
+            assert.ok(text.includes(taskId), text);
+            assert.ok(text.includes('successfully promoted'), text);
+
+            // Verify TaskManager state
+            const tasks = manager.listTasks();
+            const task = tasks.find(t => t.id === taskId);
+            assert.strictEqual(task?.type, 'project');
+        });
+
+        // ── invoke: error handling ───────────────────────────────────────
+
+        test('invoke throws helpful error for "task not found"', async () => {
+            await assert.rejects(
+                () => tool.invoke(makeInvokeOptions<ITaskIdParams>({ taskId: 'ghost' }), NEVER_TOKEN),
+                (err: Error) => {
+                    assert.ok(err.message.includes('ghost'), err.message);
+                    assert.ok(err.message.includes('not found'), err.message);
+                    assert.ok(err.message.includes('list_tasks'), err.message);
+                    return true;
+                }
+            );
+        });
+
+        test('invoke throws helpful error for "already a project"', async () => {
+            const taskId = 'already-proj';
+            manager.createTask(taskId, 'project');
+
+            await assert.rejects(
+                () => tool.invoke(makeInvokeOptions<ITaskIdParams>({ taskId }), NEVER_TOKEN),
+                (err: Error) => {
+                    assert.ok(err.message.includes(taskId), err.message);
+                    assert.ok(err.message.includes('already a project'), err.message);
+                    return true;
+                }
+            );
+        });
+    });
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // Hierarchical Workflow (End-to-End)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    suite('Hierarchical Workflow', () => {
+        setup(() => {
+            // manager already setup in outer suite
+        });
+
+        test('E2E: Create project, create subtask, list subtasks, and verify tree view', async () => {
+            const createTool = new CreateTaskTool(manager);
+            const listTool = new ListTasksTool(manager);
+            const treeProvider = new TaskTreeProvider(manager);
+
+            // 1. Create a project
+            await createTool.invoke(
+                makeInvokeOptions<ICreateTaskParams>({ taskId: 'proj-1', type: 'project' }),
+                NEVER_TOKEN
+            );
+
+            // 2. Create a subtask
+            await createTool.invoke(
+                makeInvokeOptions<ICreateTaskParams>({ taskId: 'sub-1', parentTaskId: 'proj-1' }),
+                NEVER_TOKEN
+            );
+
+            // 3. List subtasks
+            const listResult = await listTool.invoke(
+                makeInvokeOptions<IListTasksParams>({ parentTaskId: 'proj-1' }),
+                NEVER_TOKEN
+            );
+            const text = firstTextPart(listResult);
+            assert.ok(text.includes('sub-1'), text);
+
+            // 4. Verify Tree View compatibility
+            const rootItems = await treeProvider.getChildren();
+            const projectItem = rootItems.find(item => item.task.id === 'proj-1');
+            assert.ok(projectItem, 'Project should be in root tree items');
+            assert.strictEqual(projectItem?.collapsibleState, vscode.TreeItemCollapsibleState.Collapsed, 'Project should be expandable');
+
+            const subItems = await treeProvider.getChildren(projectItem);
+            assert.strictEqual(subItems.length, 1);
+            assert.strictEqual(subItems[0].task.id, 'sub-1');
+            assert.strictEqual(subItems[0].collapsibleState, vscode.TreeItemCollapsibleState.None, 'Task should be a leaf node');
         });
     });
 });

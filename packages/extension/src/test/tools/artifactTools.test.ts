@@ -103,7 +103,7 @@ suite('Artifact Management Tools', () => {
                 NEVER_TOKEN
             );
             const text = firstTextPart(result);
-            assert.ok(text.includes('5 artifact type(s)'), text);
+            assert.ok(text.includes('6 artifact type(s)'), text);
         });
 
         test('invoke result includes the "research" type ID', async () => {
@@ -153,7 +153,7 @@ suite('Artifact Management Tools', () => {
             });
             const result = await tool.invoke(makeInvokeOptions<Record<string, never>>({}), NEVER_TOKEN);
             const text = firstTextPart(result);
-            assert.ok(text.includes('6 artifact type(s)'), text);
+            assert.ok(text.includes('7 artifact type(s)'), text);
         });
 
         // ── prepareInvocation ────────────────────────────────────────────
@@ -206,7 +206,7 @@ suite('Artifact Management Tools', () => {
             const text = firstTextPart(result);
             // Count only the per-entry lines, which contain ' — template only' or ' — exists on disk'
             const entryCount = (text.match(/ — (template only|exists on disk)/g) ?? []).length;
-            assert.strictEqual(entryCount, 5, `Expected 5 entries, got ${entryCount} in: "${text}"`);
+            assert.strictEqual(entryCount, 6, `Expected 6 entries, got ${entryCount} in: "${text}"`);
         });
 
         test('invoke marks all artifacts as template-only when no files saved', async () => {
@@ -749,7 +749,7 @@ suite('Artifact Management Tools', () => {
                 }),
                 NEVER_TOKEN
             );
-            assert.strictEqual(registry.getTypes().length, 6);
+            assert.strictEqual(registry.getTypes().length, 7);
         });
 
         // ── invoke: error handling ───────────────────────────────────────

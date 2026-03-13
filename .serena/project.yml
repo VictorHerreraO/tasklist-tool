@@ -114,6 +114,8 @@ base_modes:
 # Otherwise, this overrides the setting from the global configuration (serena_config.yml).
 # This setting can, in turn, be overridden by CLI parameters (--mode).
 default_modes:
+- one-shot
+- no-onboarding
 
 # initial prompt for the project. It will always be given to the LLM upon activating the project
 # (contrary to the memories, which are loaded on demand).

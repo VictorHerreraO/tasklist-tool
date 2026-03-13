@@ -25,6 +25,12 @@ export interface TaskEntry {
 
     /** Unix timestamp (ms) when the task was last updated. */
     updatedAt: number;
+
+    /** Entry type: 'task' or 'project'. Defaults to 'task'. */
+    type: 'task' | 'project';
+
+    /** Optional parent task ID for hierarchical structures. */
+    parentTaskId?: string;
 }
 
 /**

@@ -16,6 +16,13 @@ export interface IListTasksParams {
      * Omit to list all tasks.
      */
     status?: string;
+
+    /**
+     * Optional ID of the parent project. When provided, only subtasks within
+     * that project are returned. If omitted, only top-level tasks and projects
+     * are returned.
+     */
+    parentTaskId?: string;
 }
 
 /**
@@ -27,12 +34,24 @@ export interface ICreateTaskParams {
      * (e.g. `'feature-login'`). Must not already exist in the workspace.
      */
     taskId: string;
+
+    /**
+     * Optional type for the new task. Defaults to `'task'`.
+     * A `'project'` can contain subtasks.
+     */
+    type?: 'task' | 'project';
+
+    /**
+     * Optional ID of the parent project. The parent must be an existing
+     * task of type `'project'`.
+     */
+    parentTaskId?: string;
 }
 
 /**
  * Generic parameters for tools that operate on a single task by its ID.
  *
- * Reused for: `activate_task`, `deactivate_task`, `start_task`, `close_task`.
+ * Reused for: `activate_task`, `deactivate_task`, `start_task`, `close_task`, `promote_to_project`.
  * (`deactivate_task` does not actually need a taskId but we keep the shape
  * consistent so the LM can still pass it without causing an error.)
  */

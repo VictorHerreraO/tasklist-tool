@@ -49,11 +49,11 @@ suite('ArtifactRegistry', () => {
     // ── Default built-in types ─────────────────────────────────────────────
 
     suite('default built-in types', () => {
-        test('loads exactly 5 default types after initialize()', () => {
-            assert.strictEqual(registry.getTypes().length, 5);
+        test('loads exactly 6 default types after initialize()', () => {
+            assert.strictEqual(registry.getTypes().length, 6);
         });
 
-        test('includes all 5 expected built-in type IDs', () => {
+        test('includes all 6 expected built-in type IDs', () => {
             const ids = registry.getTypes().map(t => t.id);
             const expected = [
                 'task-details',
@@ -61,6 +61,7 @@ suite('ArtifactRegistry', () => {
                 'implementation-plan',
                 'walkthrough',
                 'review',
+                'analysis',
             ];
             for (const id of expected) {
                 assert.ok(ids.includes(id), `Missing expected built-in type: '${id}'`);
@@ -257,14 +258,14 @@ suite('ArtifactRegistry', () => {
         test('total type count is 6 when one unique workspace type is added', () => {
             registry.registerAndPersistType(workspaceRoot, CUSTOM_TYPE);
             registry.initialize();
-            assert.strictEqual(registry.getTypes().length, 6); // 5 built-ins + 1 new
+            assert.strictEqual(registry.getTypes().length, 7); // 6 built-ins + 1 new
         });
 
         test('overriding a built-in type keeps total count at 5', () => {
             const overrideBuiltIn: ArtifactType = { ...CUSTOM_TYPE, id: 'review' };
             registry.registerAndPersistType(workspaceRoot, overrideBuiltIn);
             registry.initialize();
-            assert.strictEqual(registry.getTypes().length, 5); // still 5, one replaced
+            assert.strictEqual(registry.getTypes().length, 6); // still 6, one replaced
         });
 
         test('re-initialize() drops in-memory-only registrations', () => {

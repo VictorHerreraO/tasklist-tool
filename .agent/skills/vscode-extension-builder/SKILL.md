@@ -1,11 +1,14 @@
 ---
-name: VS Code TypeScript Extension Scaffolder
+name: vscode-extension-builder
 description: Instructions for initializing a standard VS Code extension workspace using TypeScript.
 ---
 
 # VS Code TypeScript Extension Scaffolder
 
 This skill provides mandatory instructions for setting up a standard development environment for a VS Code extension written in TypeScript.
+
+> [!TIP]
+> Use the [AI Extensibility Overview](./resources/ai-extensibility.md) to decide between Language Model Tools, MCP, or Chat Participants, and follow the [Language Model Tool API](./resources/llt-tool-api.md) guide for deep editor integration.
 
 ## 1. Workspace Scaffolding
 

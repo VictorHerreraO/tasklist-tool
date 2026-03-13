@@ -38,7 +38,7 @@ function successResult(message: string): McpToolResult {
 
 export async function handleListTasks(
     manager: TaskManager,
-    input: { status?: string }
+    input: { status?: string; parentTaskId?: string }
 ): Promise<McpToolResult> {
     let statusFilter: TaskStatus | undefined;
 
@@ -55,15 +55,18 @@ export async function handleListTasks(
     }
 
     try {
-        const tasks = manager.listTasks(statusFilter);
+        const tasks = manager.listTasks(statusFilter, input.parentTaskId);
 
         if (tasks.length === 0) {
-            const context = statusFilter ? ` with status '${statusFilter}'` : '';
+            let context = statusFilter ? ` with status '${statusFilter}'` : '';
+            if (input.parentTaskId) {
+                context += ` in project '${input.parentTaskId}'`;
+            }
             return successResult(`No tasks found${context} in the workspace.`);
         }
 
         const lines = tasks.map(
-            t => `- ${t.id} [${t.status}] (created: ${new Date(t.createdAt).toISOString()}, updated: ${new Date(t.updatedAt).toISOString()})`
+            t => `- ${t.id} [${t.status}]${t.type === 'project' ? ' (project)' : ''} (created: ${new Date(t.createdAt).toISOString()}, updated: ${new Date(t.updatedAt).toISOString()})`
         );
         return successResult(`Found ${tasks.length} task(s):\n${lines.join('\n')}`);
     } catch (err: unknown) {
@@ -78,9 +81,9 @@ export async function handleListTasks(
 
 export async function handleCreateTask(
     manager: TaskManager,
-    input: { taskId: string }
+    input: { taskId: string; type?: 'task' | 'project'; parentTaskId?: string }
 ): Promise<McpToolResult> {
-    const { taskId } = input;
+    const { taskId, type, parentTaskId } = input;
 
     if (!taskId || taskId.trim() === '') {
         return errorResult(
@@ -90,9 +93,11 @@ export async function handleCreateTask(
     }
 
     try {
-        const entry = manager.createTask(taskId);
+        const entry = manager.createTask(taskId, type, parentTaskId);
+        const typeStr = entry.type === 'project' ? 'project' : 'task';
+        const parentStr = entry.parentTaskId ? ` in project '${entry.parentTaskId}'` : '';
         return successResult(
-            `Task '${entry.id}' created successfully with status '${entry.status}'.`
+            `Task '${entry.id}' (${typeStr}) created successfully${parentStr} with status '${entry.status}'.`
         );
     } catch (err: unknown) {
         const message = toErrorMessage(err);
@@ -214,6 +219,32 @@ export async function handleCloseTask(
         return errorResult(
             `Failed to close task '${taskId}': ${message}. ` +
             `Verify the taskId is correct and the workspace index is accessible.`
+        );
+    }
+}
+
+// ─── promote_to_project ──────────────────────────────────────────────────────
+
+export async function handlePromoteToProject(
+    manager: TaskManager,
+    input: { taskId: string }
+): Promise<McpToolResult> {
+    const { taskId } = input;
+    try {
+        const entry = manager.promoteTaskToProject(taskId);
+        return successResult(
+            `Task '${entry.id}' has been promoted to a project. It can now contain subtasks.`
+        );
+    } catch (err: unknown) {
+        const message = toErrorMessage(err);
+        if (message.includes('not found')) {
+            return errorResult(
+                `Cannot promote task '${taskId}': task not found. ` +
+                `Use 'list_tasks' to see available tasks.`
+            );
+        }
+        return errorResult(
+            `Failed to promote task '${taskId}': ${message}.`
         );
     }
 }
