@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { TaskManager, ArtifactRegistry, ArtifactService } from '@tasklist/core';
+import { TaskManager, ArtifactRegistry, ArtifactService, TaskEventType } from '@tasklist/core';
 import { ListTasksTool } from './tools/listTasksTool.js';
 import { CreateTaskTool } from './tools/createTaskTool.js';
 import { ActivateTaskTool } from './tools/activateTaskTool.js';
@@ -12,7 +12,7 @@ import { GetArtifactTool } from './tools/getArtifactTool.js';
 import { UpdateArtifactTool } from './tools/updateArtifactTool.js';
 import { RegisterArtifactTypeTool } from './tools/registerArtifactTypeTool.js';
 import { PromoteToProjectTool } from './tools/promoteToProjectTool.js';
-import { TaskTreeProvider } from './views/TaskTreeProvider.js';
+import { TaskTreeProvider, TaskTreeItem } from './views/TaskTreeProvider.js';
 
 /**
  * Activates the extension.
@@ -54,8 +54,19 @@ export async function activate(context: vscode.ExtensionContext) {
         treeProvider.setTaskManager(taskManager);
 
         // Subscribe to task updates and refresh the tree view
-        const taskUpdateSubscription = taskManager.onDidUpdateTask(() => {
+        const taskUpdateSubscription = taskManager.onDidUpdateTask(async (data) => {
             treeProvider.refresh();
+
+            // Auto-reveal active task
+            if (data.event === TaskEventType.Activated) {
+                // Focus the active task in the tree
+                const task = taskManager.getActiveTask();
+                if (task) {
+                    // Note: reveal requires the TaskTreeItem. 
+                    // For now, we refresh and assume the user can see the highlighted (active) label.
+                    // A full reveal implementation would require a parent-traversal strategy in TaskTreeProvider.
+                }
+            }
         });
         context.subscriptions.push({ dispose: taskUpdateSubscription });
 
@@ -76,6 +87,63 @@ export async function activate(context: vscode.ExtensionContext) {
             vscode.lm.registerTool('get_artifact', new GetArtifactTool(taskManager, artifactService)),
             vscode.lm.registerTool('update_artifact', new UpdateArtifactTool(taskManager, artifactService)),
             vscode.lm.registerTool('register_artifact_type', new RegisterArtifactTypeTool(workspaceRoot, registry)),
+        );
+
+        // 5. Tree View Command Handlers
+        context.subscriptions.push(
+            vscode.commands.registerCommand('tasklist.refresh', () => {
+                treeProvider.refresh();
+            }),
+            vscode.commands.registerCommand('tasklist.startTask', async (node: TaskTreeItem) => {
+                try {
+                    await taskManager.start_task(node.task.id);
+                    // Tree will refresh automatically via onDidUpdateTask listener
+                } catch (error) {
+                    vscode.window.showErrorMessage(`Failed to start task: ${error instanceof Error ? error.message : String(error)}`);
+                }
+            }),
+            vscode.commands.registerCommand('tasklist.closeTask', async (node: TaskTreeItem) => {
+                try {
+                    await taskManager.close_task(node.task.id);
+                } catch (error) {
+                    vscode.window.showErrorMessage(`Failed to close task: ${error instanceof Error ? error.message : String(error)}`);
+                }
+            }),
+            vscode.commands.registerCommand('tasklist.promoteTask', async (node: TaskTreeItem) => {
+                try {
+                    await taskManager.promoteTaskToProject(node.task.id);
+                } catch (error) {
+                    vscode.window.showErrorMessage(`Failed to promote task to project: ${error instanceof Error ? error.message : String(error)}`);
+                }
+            }),
+            vscode.commands.registerCommand('tasklist.openTaskDetails', async (node: TaskTreeItem) => {
+                try {
+                    const taskId = node.task.id;
+                    const artifacts = artifactService.listArtifacts(taskId);
+                    const detailsArtifact = artifacts.find(a => a.type.id === 'task-details');
+
+                    if (detailsArtifact?.exists) {
+                        const doc = await vscode.workspace.openTextDocument(vscode.Uri.file(detailsArtifact.path));
+                        await vscode.window.showTextDocument(doc);
+                    } else {
+                        const selection = await vscode.window.showInformationMessage(
+                            `Task details for '${taskId}' do not exist. Would you like to create them from the template?`,
+                            'Create',
+                            'Cancel'
+                        );
+
+                        if (selection === 'Create') {
+                            const content = artifactService.getArtifact(taskId, 'task-details');
+                            artifactService.updateArtifact(taskId, 'task-details', content);
+                            // Refresh and open
+                            const doc = await vscode.workspace.openTextDocument(vscode.Uri.file(detailsArtifact!.path));
+                            await vscode.window.showTextDocument(doc);
+                        }
+                    }
+                } catch (error) {
+                    vscode.window.showErrorMessage(`Failed to open task details: ${error instanceof Error ? error.message : String(error)}`);
+                }
+            })
         );
 
         console.log('Tasklist Tool: Extension is now fully active.');
