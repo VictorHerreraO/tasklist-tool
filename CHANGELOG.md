@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.1] - 2026-03-13
+
+### Fixed
+- **UI Command Consistency**: Registered the `tasklist.createTask` UI-facing command and updated the welcome view to use it, resolving the non-functional "[Create Task]" link.
+- **Activation Sequence**: Refactored activation logic to register all core commands (including `tasklist.refresh`) before workspace guards, ensuring the UI is always operational.
+- **Empty State Synchronization**: Fixed a race condition where the Tree View would show "No tasks found" on startup despite valid tasks being present in the persistent index.
+
 ## [0.3.0] - 2026-03-13
 
 ### Added
