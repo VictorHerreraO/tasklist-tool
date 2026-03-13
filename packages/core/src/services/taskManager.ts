@@ -1,6 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { TaskEntry, TaskIndex, TaskStatus } from '../models/task.js';
+import { EventEmitter } from 'events';
+import { TaskEntry, TaskEventType, TaskIndex, TaskStatus } from '../models/task.js';
 
 /** Relative path (from workspace root) to the index file. */
 const INDEX_REL_PATH = path.join('.tasks', 'index.json');
@@ -22,9 +23,25 @@ export class TaskManager {
     /**
      * @param workspaceRoot - Absolute path to the VS Code workspace root folder.
      */
+    /** Emitter for task lifecycle events. */
+    private readonly emitter = new EventEmitter();
+
     constructor(workspaceRoot: string) {
         this.workspaceRoot = workspaceRoot;
         this.indexPath = path.join(workspaceRoot, INDEX_REL_PATH);
+    }
+
+    /**
+     * Registers a listener for task update events.
+     * 
+     * @param listener - Function to call when a task is updated.
+     * @returns A function to unregister the listener.
+     */
+    public onDidUpdateTask(listener: (data: { taskId: string; event: TaskEventType }) => void): () => void {
+        this.emitter.on('didUpdateTask', listener);
+        return () => {
+            this.emitter.off('didUpdateTask', listener);
+        };
     }
 
     // ─── Private Helpers ────────────────────────────────────────────────────
@@ -147,6 +164,7 @@ export class TaskManager {
             };
             nestedIndex.tasks.push(entry);
             this.writeIndex(nestedIndex, parentTaskId);
+            this.emitter.emit('didUpdateTask', { taskId: id, event: TaskEventType.Created });
             return entry;
         } else {
             const index = this.readIndex();
@@ -163,6 +181,7 @@ export class TaskManager {
             };
             index.tasks.push(entry);
             this.writeIndex(index);
+            this.emitter.emit('didUpdateTask', { taskId: id, event: TaskEventType.Created });
             return entry;
         }
     }
@@ -231,6 +250,7 @@ export class TaskManager {
         }
 
         this.writeIndex(index);
+        this.emitter.emit('didUpdateTask', { taskId: taskId, event: TaskEventType.Updated });
         return entry;
     }
 
@@ -260,6 +280,7 @@ export class TaskManager {
         const rootIndex = this.readIndex();
         rootIndex.activeTaskId = id;
         this.writeIndex(rootIndex);
+        this.emitter.emit('didUpdateTask', { taskId: id, event: TaskEventType.Activated });
     }
 
     /**
@@ -269,6 +290,7 @@ export class TaskManager {
         const rootIndex = this.readIndex();
         rootIndex.activeTaskId = null;
         this.writeIndex(rootIndex);
+        this.emitter.emit('didUpdateTask', { taskId: 'none', event: TaskEventType.Deactivated });
     }
 
     /**
@@ -291,6 +313,7 @@ export class TaskManager {
         entry.status = TaskStatus.InProgress;
         entry.updatedAt = Date.now();
         this.writeIndex(index, parentTaskId);
+        this.emitter.emit('didUpdateTask', { taskId: id, event: TaskEventType.StatusChanged });
         return entry;
     }
 
@@ -314,6 +337,7 @@ export class TaskManager {
         entry.status = TaskStatus.Closed;
         entry.updatedAt = Date.now();
         this.writeIndex(index, parentTaskId);
+        this.emitter.emit('didUpdateTask', { taskId: id, event: TaskEventType.StatusChanged });
         return entry;
     }
 }

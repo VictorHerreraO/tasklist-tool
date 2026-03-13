@@ -11,6 +11,17 @@ export enum TaskStatus {
 }
 
 /**
+ * Types of events emitted by the TaskManager.
+ */
+export enum TaskEventType {
+    Created = 'created',
+    Updated = 'updated',
+    StatusChanged = 'statusChanged',
+    Activated = 'activated',
+    Deactivated = 'deactivated',
+}
+
+/**
  * Represents a single task entry as stored in `.tasks/index.json`.
  */
 export interface TaskEntry {

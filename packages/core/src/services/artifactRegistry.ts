@@ -1,10 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { fileURLToPath } from 'url';
 import * as yaml from 'js-yaml';
 import { ArtifactType } from '../models/artifact.js';
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 /** Shape expected in the YAML frontmatter of each `.ai.md` template file. */
 interface TemplateFrontmatter {
@@ -144,7 +141,17 @@ export class ArtifactRegistry {
         this._types.clear();
 
         // Tier 1: built-in bundled templates.
-        const builtInDir = path.join(__dirname, '..', 'templates');
+        // In the bundled extension, templates are in `extensionRoot/templates`.
+        // In development/tests, they are in `extensionRoot/src/templates`.
+        // When consumed as a compiled dependency (e.g. by MCP), they may be in `extensionRoot/out/templates`.
+        let builtInDir = path.join(this.extensionRoot, 'templates');
+        if (!fs.existsSync(builtInDir)) {
+            builtInDir = path.join(this.extensionRoot, 'src', 'templates');
+        }
+        if (!fs.existsSync(builtInDir)) {
+            builtInDir = path.join(this.extensionRoot, 'out', 'templates');
+        }
+
         for (const type of loadTemplatesFromDir(builtInDir)) {
             this._types.set(type.id, type);
         }

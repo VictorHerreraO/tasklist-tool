@@ -10,7 +10,15 @@ export class TaskTreeProvider implements vscode.TreeDataProvider<TaskTreeItem> {
     readonly onDidChangeTreeData: vscode.Event<TaskTreeItem | undefined | null | void> =
         this._onDidChangeTreeData.event;
 
-    constructor(private taskManager: TaskManager) { }
+    constructor(private taskManager?: TaskManager) { }
+
+    /**
+     * Updates the task manager and refreshes the view.
+     */
+    setTaskManager(taskManager: TaskManager | undefined): void {
+        this.taskManager = taskManager;
+        this.refresh();
+    }
 
     /**
      * Refreshes the tree view data.
@@ -28,6 +36,7 @@ export class TaskTreeProvider implements vscode.TreeDataProvider<TaskTreeItem> {
             return [];
         }
 
+        const activeTask = this.taskManager.getActiveTask();
         let tasks: TaskEntry[];
         if (element) {
             // Fetch subtasks for the expanded project
@@ -37,7 +46,42 @@ export class TaskTreeProvider implements vscode.TreeDataProvider<TaskTreeItem> {
             tasks = this.taskManager.listTasks();
         }
 
-        return tasks.map(task => new TaskTreeItem(task));
+        return tasks.map(task => new TaskTreeItem(task, task.id === activeTask?.id));
+    }
+
+    /**
+     * Required for treeView.reveal to work. 
+     * Returns the parent of the given element.
+     */
+    async getParent(element: TaskTreeItem): Promise<TaskTreeItem | undefined> {
+        if (!this.taskManager || !element.task.parentTaskId) {
+            return undefined;
+        }
+
+        const parentId = element.task.parentTaskId;
+        const result = this.taskManager.findEntryGlobally(parentId);
+        if (result) {
+            const activeTask = this.taskManager.getActiveTask();
+            return new TaskTreeItem(result.entry, result.entry.id === activeTask?.id);
+        }
+        return undefined;
+    }
+
+    /**
+     * Helper to find or create a TaskTreeItem for a specific taskId.
+     * Used by the reveal logic to find the entry point.
+     */
+    async getItemForId(taskId: string): Promise<TaskTreeItem | undefined> {
+        if (!this.taskManager) {
+            return undefined;
+        }
+
+        const result = this.taskManager.findEntryGlobally(taskId);
+        if (result) {
+            const activeTask = this.taskManager.getActiveTask();
+            return new TaskTreeItem(result.entry, result.entry.id === activeTask?.id);
+        }
+        return undefined;
     }
 }
 
@@ -46,7 +90,8 @@ export class TaskTreeProvider implements vscode.TreeDataProvider<TaskTreeItem> {
  */
 export class TaskTreeItem extends vscode.TreeItem {
     constructor(
-        public readonly task: TaskEntry
+        public readonly task: TaskEntry,
+        public readonly isActive: boolean = false
     ) {
         // Projects are expandable, tasks are leaves
         const collapsibleState = task.type === 'project'
@@ -55,12 +100,39 @@ export class TaskTreeItem extends vscode.TreeItem {
 
         super(task.id, collapsibleState);
 
-        this.tooltip = `${this.task.id} (${this.task.status})`;
-        this.description = this.task.status;
-        this.contextValue = this.task.type; // Used for context menus (e.g., promote to project)
+        // Update label and description for active tasks
+        if (this.isActive) {
+            this.label = `${this.task.id} (active)`;
+            this.description = `${this.task.status} • Active`;
+        } else {
+            this.description = this.task.status;
+        }
 
-        // Use distinct icons for projects vs tasks
-        if (this.task.type === 'project') {
+        const createdDate = new Date(this.task.createdAt).toLocaleString();
+
+        // Markdown tooltip for a premium feel
+        const tooltip = new vscode.MarkdownString();
+        tooltip.appendMarkdown(`### **Task:** ${this.task.id}\n\n`);
+        tooltip.appendMarkdown(`**Status:** ${this.task.status.toUpperCase()}\n\n`);
+        tooltip.appendMarkdown(`**Type:** ${this.task.type}\n\n`);
+        tooltip.appendMarkdown(`**Created:** ${createdDate}\n\n`);
+        tooltip.appendMarkdown(`---\n\n`);
+        tooltip.appendMarkdown(`*Click to open details*`);
+        this.tooltip = tooltip;
+
+        this.contextValue = `${this.task.type}:${this.task.status}${this.isActive ? ':active' : ''}`;
+
+        // Set click command
+        this.command = {
+            command: 'tasklist.openTaskDetails',
+            title: 'Open Task Details',
+            arguments: [this]
+        };
+
+        // Use distinct icons
+        if (this.isActive) {
+            this.iconPath = new vscode.ThemeIcon('star-full', new vscode.ThemeColor('charts.yellow'));
+        } else if (this.task.type === 'project') {
             this.iconPath = new vscode.ThemeIcon('project');
         } else {
             this.iconPath = this.getIconForStatus(this.task.status);
@@ -70,9 +142,9 @@ export class TaskTreeItem extends vscode.TreeItem {
     private getIconForStatus(status: TaskStatus): vscode.ThemeIcon {
         switch (status) {
             case TaskStatus.InProgress:
-                return new vscode.ThemeIcon('play-circle');
+                return new vscode.ThemeIcon('sync~spin');
             case TaskStatus.Closed:
-                return new vscode.ThemeIcon('check-all');
+                return new vscode.ThemeIcon('pass-filled');
             case TaskStatus.Open:
             default:
                 return new vscode.ThemeIcon('circle-outline');

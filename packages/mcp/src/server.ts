@@ -10,5 +10,5 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 
 export const server = new McpServer({
     name: 'tasklist-mcp-server',
-    version: '0.0.1',
+    version: '0.3.3',
 });

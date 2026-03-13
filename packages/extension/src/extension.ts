@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { TaskManager, ArtifactRegistry, ArtifactService } from '@tasklist/core';
+import { TaskManager, ArtifactRegistry, ArtifactService, TaskEventType } from '@tasklist/core';
 import { ListTasksTool } from './tools/listTasksTool.js';
 import { CreateTaskTool } from './tools/createTaskTool.js';
 import { ActivateTaskTool } from './tools/activateTaskTool.js';
@@ -12,7 +12,7 @@ import { GetArtifactTool } from './tools/getArtifactTool.js';
 import { UpdateArtifactTool } from './tools/updateArtifactTool.js';
 import { RegisterArtifactTypeTool } from './tools/registerArtifactTypeTool.js';
 import { PromoteToProjectTool } from './tools/promoteToProjectTool.js';
-import { TaskTreeProvider } from './views/TaskTreeProvider.js';
+import { TaskTreeProvider, TaskTreeItem } from './views/TaskTreeProvider.js';
 
 /**
  * Activates the extension.
@@ -20,47 +20,194 @@ import { TaskTreeProvider } from './views/TaskTreeProvider.js';
  * @param context The extension context.
  */
 export async function activate(context: vscode.ExtensionContext) {
-    // Require an open workspace folder.
-    const workspaceFolders = vscode.workspace.workspaceFolders;
-    if (!workspaceFolders || workspaceFolders.length === 0) {
-        vscode.window.showErrorMessage(
-            'Tasklist Tool requires an open workspace folder. Please open a folder and try again.'
-        );
-        return;
-    }
+    const outputChannel = vscode.window.createOutputChannel('Tasklist Tool');
+    context.subscriptions.push(outputChannel);
+    outputChannel.appendLine('Tasklist Tool: Activating...');
 
-    const workspaceRoot = workspaceFolders[0].uri.fsPath;
-    const extensionRoot = context.extensionUri.fsPath;
+    let taskManager: TaskManager | undefined;
+    let artifactService: ArtifactService | undefined;
+    const treeProvider = new TaskTreeProvider();
 
-    // Instantiate services (shared across all tool instances).
-    const taskManager = new TaskManager(workspaceRoot);
-    const registry = new ArtifactRegistry(extensionRoot, workspaceRoot);
-    await registry.initialize();
-    const artifactService = new ArtifactService(workspaceRoot, taskManager, registry);
+    // 1. Immediate UI Registration
+    const treeView = vscode.window.createTreeView('tasklist-tree', {
+        treeDataProvider: treeProvider,
+        showCollapseAll: true
+    });
+    context.subscriptions.push(treeView);
 
-    // Register Tree Provider
-    const treeProvider = new TaskTreeProvider(taskManager);
+    // 2. Command Registration (Early)
     context.subscriptions.push(
-        vscode.window.registerTreeDataProvider('tasklist-tree', treeProvider)
+        vscode.commands.registerCommand('tasklist.refresh', () => {
+            treeProvider.refresh();
+        }),
+        // ... (rest of the commands using try-catch as before)
+        vscode.commands.registerCommand('tasklist.startTask', async (node: TaskTreeItem) => {
+            if (!taskManager) {
+                return;
+            }
+            try {
+                await taskManager.start_task(node.task.id);
+            } catch (error) {
+                const msg = `Failed to start task: ${error instanceof Error ? error.message : String(error)}`;
+                outputChannel.appendLine(msg);
+                vscode.window.showErrorMessage(msg);
+            }
+        }),
+        vscode.commands.registerCommand('tasklist.closeTask', async (node: TaskTreeItem) => {
+            if (!taskManager) {
+                return;
+            }
+            try {
+                await taskManager.close_task(node.task.id);
+            } catch (error) {
+                const msg = `Failed to close task: ${error instanceof Error ? error.message : String(error)}`;
+                outputChannel.appendLine(msg);
+                vscode.window.showErrorMessage(msg);
+            }
+        }),
+        vscode.commands.registerCommand('tasklist.promoteTask', async (node: TaskTreeItem) => {
+            if (!taskManager) {
+                return;
+            }
+            try {
+                await taskManager.promoteTaskToProject(node.task.id);
+            } catch (error) {
+                const msg = `Failed to promote task to project: ${error instanceof Error ? error.message : String(error)}`;
+                outputChannel.appendLine(msg);
+                vscode.window.showErrorMessage(msg);
+            }
+        }),
+        vscode.commands.registerCommand('tasklist.createTask', async () => {
+            const taskId = await vscode.window.showInputBox({
+                prompt: 'Enter Task ID',
+                placeHolder: 'e.g. feature-login'
+            });
+            if (taskId) {
+                try {
+                    if (taskManager) {
+                        await taskManager.createTask(taskId);
+                        vscode.window.showInformationMessage(`Task '${taskId}' created.`);
+                    } else {
+                        const msg = 'No active workspace. Task creation failed.';
+                        outputChannel.appendLine(msg);
+                        vscode.window.showErrorMessage(msg);
+                    }
+                } catch (error) {
+                    const msg = `Failed to create task: ${error instanceof Error ? error.message : String(error)}`;
+                    outputChannel.appendLine(msg);
+                    vscode.window.showErrorMessage(msg);
+                }
+            }
+        }),
+        vscode.commands.registerCommand('tasklist.openTaskDetails', async (node: TaskTreeItem) => {
+            if (!artifactService || !taskManager) {
+                outputChannel.appendLine('Artifact service not initialized. Please ensure a workspace is open.');
+                vscode.window.showWarningMessage('Artifact service not initialized. Please ensure a workspace is open.');
+                return;
+            }
+            try {
+                const taskId = node.task.id;
+                const artifacts = artifactService.listArtifacts(taskId);
+                const detailsArtifact = artifacts.find(a => a.type.id === 'task-details');
+
+                if (detailsArtifact?.exists) {
+                    const doc = await vscode.workspace.openTextDocument(vscode.Uri.file(detailsArtifact.path));
+                    await vscode.window.showTextDocument(doc);
+                } else {
+                    const selection = await vscode.window.showInformationMessage(
+                        `Task details for '${taskId}' do not exist. Would you like to create them from the template?`,
+                        'Create',
+                        'Cancel'
+                    );
+
+                    if (selection === 'Create') {
+                        const content = artifactService.getArtifact(taskId, 'task-details');
+                        artifactService.updateArtifact(taskId, 'task-details', content);
+                        // Refresh and open
+                        const doc = await vscode.workspace.openTextDocument(vscode.Uri.file(detailsArtifact!.path));
+                        await vscode.window.showTextDocument(doc);
+                    }
+                }
+            } catch (error) {
+                const msg = `Failed to open task details: ${error instanceof Error ? error.message : String(error)}`;
+                outputChannel.appendLine(msg);
+                vscode.window.showErrorMessage(msg);
+            }
+        })
     );
 
-    // Register all 12 LM tools.
+    // 3. Service Initialization Logic
+    const initializeServices = async () => {
+        try {
+            const workspaceFolders = vscode.workspace.workspaceFolders;
+            if (!workspaceFolders || workspaceFolders.length === 0) {
+                taskManager = undefined;
+                artifactService = undefined;
+                treeProvider.setTaskManager(undefined);
+                return;
+            }
+
+            outputChannel.appendLine('Tasklist Tool: Initializing services...');
+            const workspaceRoot = workspaceFolders[0].uri.fsPath;
+            const extensionRoot = context.extensionUri.fsPath;
+
+            taskManager = new TaskManager(workspaceRoot);
+            const registry = new ArtifactRegistry(extensionRoot, workspaceRoot);
+            await registry.initialize();
+            artifactService = new ArtifactService(workspaceRoot, taskManager, registry);
+
+            treeProvider.setTaskManager(taskManager);
+
+            // Subscribe to task updates
+            const taskUpdateSubscription = taskManager.onDidUpdateTask(async (data) => {
+                treeProvider.refresh();
+                if (data.event === TaskEventType.Activated) {
+                    const item = await treeProvider.getItemForId(data.taskId);
+                    if (item) {
+                        setTimeout(() => {
+                            treeView.reveal(item, { select: true, focus: true, expand: true });
+                        }, 100);
+                    }
+                }
+            });
+            context.subscriptions.push({ dispose: taskUpdateSubscription });
+
+            // Tool Registration (only if workspace is open)
+            context.subscriptions.push(
+                vscode.lm.registerTool('list_tasks', new ListTasksTool(taskManager)),
+                vscode.lm.registerTool('create_task', new CreateTaskTool(taskManager)),
+                vscode.lm.registerTool('activate_task', new ActivateTaskTool(taskManager)),
+                vscode.lm.registerTool('deactivate_task', new DeactivateTaskTool(taskManager)),
+                vscode.lm.registerTool('start_task', new StartTaskTool(taskManager)),
+                vscode.lm.registerTool('close_task', new CloseTaskTool(taskManager)),
+                vscode.lm.registerTool('promote_to_project', new PromoteToProjectTool(taskManager)),
+                vscode.lm.registerTool('list_artifact_types', new ListArtifactTypesTool(registry)),
+                vscode.lm.registerTool('list_artifacts', new ListArtifactsTool(taskManager, artifactService)),
+                vscode.lm.registerTool('get_artifact', new GetArtifactTool(taskManager, artifactService)),
+                vscode.lm.registerTool('update_artifact', new UpdateArtifactTool(taskManager, artifactService)),
+                vscode.lm.registerTool('register_artifact_type', new RegisterArtifactTypeTool(workspaceRoot, registry)),
+            );
+
+            outputChannel.appendLine('Tasklist Tool: Services initialized.');
+        } catch (error) {
+            const msg = `Tasklist Tool: Initialization failed: ${error instanceof Error ? error.stack || error.message : String(error)}`;
+            outputChannel.appendLine(msg);
+            vscode.window.showErrorMessage('Tasklist Tool failed to initialize. Check Output for details.');
+        }
+    };
+
+    // Initial check
+    await initializeServices();
+
+    // Listen for workspace changes
     context.subscriptions.push(
-        vscode.lm.registerTool('list_tasks', new ListTasksTool(taskManager)),
-        vscode.lm.registerTool('create_task', new CreateTaskTool(taskManager)),
-        vscode.lm.registerTool('activate_task', new ActivateTaskTool(taskManager)),
-        vscode.lm.registerTool('deactivate_task', new DeactivateTaskTool(taskManager)),
-        vscode.lm.registerTool('start_task', new StartTaskTool(taskManager)),
-        vscode.lm.registerTool('close_task', new CloseTaskTool(taskManager)),
-        vscode.lm.registerTool('promote_to_project', new PromoteToProjectTool(taskManager)),
-        vscode.lm.registerTool('list_artifact_types', new ListArtifactTypesTool(registry)),
-        vscode.lm.registerTool('list_artifacts', new ListArtifactsTool(taskManager, artifactService)),
-        vscode.lm.registerTool('get_artifact', new GetArtifactTool(taskManager, artifactService)),
-        vscode.lm.registerTool('update_artifact', new UpdateArtifactTool(taskManager, artifactService)),
-        vscode.lm.registerTool('register_artifact_type', new RegisterArtifactTypeTool(workspaceRoot, registry)),
+        vscode.workspace.onDidChangeWorkspaceFolders(async () => {
+            outputChannel.appendLine('Tasklist Tool: Workspace folders changed, re-initializing...');
+            await initializeServices();
+        })
     );
 
-    console.log('Tasklist Tool extension is now active.');
+    outputChannel.appendLine('Tasklist Tool: Extension activation complete.');
 }
 
 /**
