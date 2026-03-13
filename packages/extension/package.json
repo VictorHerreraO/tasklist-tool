@@ -2,7 +2,7 @@
   "name": "tasklist-tool",
   "displayName": "Tasklist Tool",
   "description": "A VS Code extension for structured task and artifact management for AI agents.",
-  "version": "0.2.3",
+  "version": "0.3.0",
   "publisher": "local",
   "repository": {
     "type": "git",

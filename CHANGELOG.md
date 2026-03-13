@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.0] - 2026-03-13
+
+### Added
+- **Sync-and-Reveal Logic**: Added support for proactive UI behavior where the Task Explorer automatically expands parent projects and reveals active tasks upon activation.
+- **Enhanced Visual State**: Implemented premium iconography and high-fidelity tooltips with Markdown formatting for task items.
+- **Active Task Highlighting**: Improved visual feedback for active tasks with dedicated "active" status indicators in labels and descriptions.
+- **Event Lifecycle Testing**: Formalized testing for the core `TaskManager` event system, ensuring 100% coverage for task creation, status changes, and activation.
+- **Provider Logic Coverage**: Added robust unit tests for `getParent` and `getItemForId` logic in `TaskTreeProvider`.
+
+### Changed
+- Refactored `TaskTreeProvider` to implement hierarchical navigation requirements for `treeView.reveal`.
+- Updated `extension.ts` event loop to intelligently trigger view reveals with optimal timing.
+
 ## [0.2.2] - 2026-03-12
 
 ### Fixed

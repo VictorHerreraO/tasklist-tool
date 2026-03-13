@@ -9,3 +9,5 @@ description: How to upgrade the project version
 3. If a task id was provided review the artifacts for the task in the tasklist.
 4. If no task id then use git to review the changes since the last tag.
 5. Update the changelog files.
+6. Package the vsix file
+7. Update the MCP server
