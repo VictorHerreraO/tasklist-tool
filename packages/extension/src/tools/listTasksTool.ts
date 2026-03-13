@@ -32,14 +32,16 @@ export class ListTasksTool implements vscode.LanguageModelTool<IListTasksParams>
         options: vscode.LanguageModelToolInvocationPrepareOptions<IListTasksParams>,
         _token: vscode.CancellationToken
     ): Promise<vscode.PreparedToolInvocation> {
-        const statusFilter = options.input.status;
-        const filterLabel = statusFilter ? ` with status \`${statusFilter}\`` : '';
+        const { status, parentTaskId } = options.input;
+        const statusLabel = status ? ` with status \`${status}\`` : '';
+        const parentLabel = parentTaskId ? ` in project \`${parentTaskId}\`` : ' (top-level only)';
+
         return {
-            invocationMessage: `Listing tasks${filterLabel}`,
+            invocationMessage: `Listing tasks${statusLabel}${parentLabel}`,
             confirmationMessages: {
                 title: 'List Tasks',
                 message: new vscode.MarkdownString(
-                    `Retrieve all tasks${filterLabel} from the workspace index.`
+                    `Retrieve tasks${statusLabel}${parentLabel} from the workspace index.`
                 ),
             },
         };
@@ -57,7 +59,7 @@ export class ListTasksTool implements vscode.LanguageModelTool<IListTasksParams>
         options: vscode.LanguageModelToolInvocationOptions<IListTasksParams>,
         _token: vscode.CancellationToken
     ): Promise<vscode.LanguageModelToolResult> {
-        const { status } = options.input;
+        const { status, parentTaskId } = options.input;
 
         // Validate status filter before forwarding to the service.
         let statusFilter: TaskStatus | undefined;
@@ -74,17 +76,18 @@ export class ListTasksTool implements vscode.LanguageModelTool<IListTasksParams>
         }
 
         try {
-            const tasks = this.taskManager.listTasks(statusFilter);
+            const tasks = this.taskManager.listTasks(statusFilter, parentTaskId);
 
             if (tasks.length === 0) {
-                const context = statusFilter ? ` with status '${statusFilter}'` : '';
+                const statusContext = statusFilter ? ` with status '${statusFilter}'` : '';
+                const parentContext = parentTaskId ? ` in project '${parentTaskId}'` : ' (at top-level)';
                 return new vscode.LanguageModelToolResult([
-                    new vscode.LanguageModelTextPart(`No tasks found${context} in the workspace.`),
+                    new vscode.LanguageModelTextPart(`No tasks found${statusContext}${parentContext} in the workspace.`),
                 ]);
             }
 
             const lines = tasks.map(
-                t => `- ${t.id} [${t.status}] (created: ${new Date(t.createdAt).toISOString()}, updated: ${new Date(t.updatedAt).toISOString()})`
+                t => `- ${t.id} [${t.status}]${t.type === 'project' ? ' (Project)' : ''} (created: ${new Date(t.createdAt).toISOString()}, updated: ${new Date(t.updatedAt).toISOString()})`
             );
             return new vscode.LanguageModelToolResult([
                 new vscode.LanguageModelTextPart(

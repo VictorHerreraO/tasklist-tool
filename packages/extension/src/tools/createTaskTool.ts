@@ -32,13 +32,16 @@ export class CreateTaskTool implements vscode.LanguageModelTool<ICreateTaskParam
         options: vscode.LanguageModelToolInvocationPrepareOptions<ICreateTaskParams>,
         _token: vscode.CancellationToken
     ): Promise<vscode.PreparedToolInvocation> {
-        const { taskId } = options.input;
+        const { taskId, type, parentTaskId } = options.input;
+        const typeLabel = type === 'project' ? 'project' : 'task';
+        const parentLabel = parentTaskId ? ` as a subtask of project \`${parentTaskId}\`` : '';
+
         return {
-            invocationMessage: `Creating task '${taskId}'`,
+            invocationMessage: `Creating ${typeLabel} '${taskId}'${parentLabel}`,
             confirmationMessages: {
                 title: 'Create Task',
                 message: new vscode.MarkdownString(
-                    `Create a new task with ID \`${taskId}\` and status \`open\` in the workspace index.`
+                    `Create a new ${typeLabel} with ID \`${taskId}\` and status \`open\`${parentLabel} in the workspace index.`
                 ),
             },
         };
@@ -56,7 +59,7 @@ export class CreateTaskTool implements vscode.LanguageModelTool<ICreateTaskParam
         options: vscode.LanguageModelToolInvocationOptions<ICreateTaskParams>,
         _token: vscode.CancellationToken
     ): Promise<vscode.LanguageModelToolResult> {
-        const { taskId } = options.input;
+        const { taskId, type, parentTaskId } = options.input;
 
         if (!taskId || taskId.trim() === '') {
             throw new Error(
@@ -66,24 +69,32 @@ export class CreateTaskTool implements vscode.LanguageModelTool<ICreateTaskParam
         }
 
         try {
-            const entry = this.taskManager.createTask(taskId);
+            const entry = this.taskManager.createTask(taskId, type || 'task', parentTaskId);
             return new vscode.LanguageModelToolResult([
                 new vscode.LanguageModelTextPart(
-                    `Task '${entry.id}' created successfully with status '${entry.status}'.`
+                    `${entry.type === 'project' ? 'Project' : 'Task'} '${entry.id}' created successfully with status '${entry.status}'${parentTaskId ? ` under parent '${parentTaskId}'` : ''}.`
                 ),
             ]);
         } catch (err: unknown) {
             const message = err instanceof Error ? err.message : String(err);
-            // Surface duplicate-ID errors with actionable guidance.
+
+            // Surface common errors with actionable guidance.
             if (message.includes('already exists')) {
                 throw new Error(
                     `Cannot create task: ${message} ` +
                     `Choose a different taskId or use 'list_tasks' to review existing tasks.`
                 );
             }
+            if (message.includes('not found') || message.includes('is not a project')) {
+                throw new Error(
+                    `Cannot create subtask: ${message} ` +
+                    `Please ensure you provide the correct ID of an existing project. Use 'list_tasks' to see available projects.`
+                );
+            }
+
             throw new Error(
                 `Failed to create task '${taskId}': ${message}. ` +
-                `Ensure the workspace root is writable and the taskId is a valid identifier.`
+                `Ensure the workspace root is writable and the parameters are valid.`
             );
         }
     }
