@@ -1,6 +1,6 @@
 # Tasklist Tool – Hierarchical Task Management - APM Implementation Plan
 **Memory Strategy:** Dynamic-MD
-**Last Modification:** Plan extended by Setup Agent to include Phase 6 (LM Tool Migration).
+**Last Modification:** Task 6.1 completed; LM Tool definition added to extension manifest.
 **Project Overview:** This project introduces a two-level hierarchy (Projects and Subtasks) to the Tasklist Tool. Following the initial implementation, the "Promote to Project" functionality is being migrated from a standard VS Code command to a Language Model (LM) Tool for improved agentic integration and consistency.
 
 ## Phase 1: Test Infrastructure & Baseline
@@ -93,7 +93,7 @@
 - **Depends on:** Task 5.2 Output
 
 ## Phase 6: Language Model Tool Migration
-### Task 6.1 – Define promote_to_project in package.json - Agent_Extension
+### Task 6.1 – Define promote_to_project in package.json - Agent_Extension (Completed)
 - **Objective:** Update the extension manifest to swap the UI command for an LLM-accessible tool.
 - **Output:** Updated `packages/extension/package.json`.
 - **Guidance:** 1:1 mapping with MCP tool metadata.
