@@ -22,7 +22,7 @@
         "name": "list_tasks",
         "toolReferenceName": "list_tasks",
         "displayName": "List Tasks",
-        "modelDescription": "Retrieve a list of tasks from the workspace. Use this when you need to see available tasks, check their status, or find a specific task ID to work on. You can optionally filter by status ('open', 'in-progress', 'closed'). Returns an array of task objects containing id, status, createdAt, and updatedAt.",
+        "modelDescription": "Retrieve a list of tasks from the workspace. Use this when you need to see available tasks, check their status, or find a specific task ID to work on. Accepted status values: 'open', 'in-progress', 'closed'. Omit to list all tasks. By default (if parentTaskId is omitted), only top-level tasks/projects are returned.",
         "userDescription": "Lists tasks in the current workspace, optionally filtered by status.",
         "canBeReferencedInPrompt": true,
         "inputSchema": {
@@ -36,6 +36,10 @@
                 "closed"
               ],
               "description": "Optional status to filter tasks by."
+            },
+            "parentTaskId": {
+              "type": "string",
+              "description": "Filter tasks by parent project ID. If omitted, only top-level tasks are returned."
             }
           }
         }
@@ -44,7 +48,7 @@
         "name": "create_task",
         "toolReferenceName": "create_task",
         "displayName": "Create Task",
-        "modelDescription": "Create a new task in the workspace. Use this when you are starting a new piece of work that requires tracking. The taskId must be a unique, URL-friendly string. Initial status will be 'open'. This tool creates the task entry in the index and the corresponding directory for artifacts.",
+        "modelDescription": "Create a new task in the workspace with status 'open'. The taskId must be unique and URL-friendly (e.g. 'feature-login'). A task with type: 'project' acts as a container for subtasks. Use list_tasks to check for existing IDs before creating.",
         "userDescription": "Creates a new task with a unique ID.",
         "canBeReferencedInPrompt": true,
         "inputSchema": {
@@ -53,6 +57,18 @@
             "taskId": {
               "type": "string",
               "description": "A unique identifier for the task (e.g., 'feature-login-implementation')."
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "task",
+                "project"
+              ],
+              "description": "Whether this is a 'task' or a 'project'. Defaults to 'task'."
+            },
+            "parentTaskId": {
+              "type": "string",
+              "description": "Optional ID of the parent project. The parent must be a task with type: 'project'."
             }
           },
           "required": [
