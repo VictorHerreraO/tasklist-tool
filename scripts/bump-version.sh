@@ -45,6 +45,16 @@ for file in "${FILES[@]}"; do
     fi
 done
 
+# Update hardcoded version in MCP server.ts
+MCP_SERVER_FILE="packages/mcp/src/server.ts"
+if [ -f "$MCP_SERVER_FILE" ]; then
+    echo "Updating $MCP_SERVER_FILE..."
+    # Update version: 'x.y.z' to the new version
+    sed -i '' "s/version: '[0-9]*\.[0-9]*\.[0-9]*'/version: '$NEW_VERSION'/g" "$MCP_SERVER_FILE"
+else
+    echo "Warning: $MCP_SERVER_FILE not found!"
+fi
+
 echo ""
 echo "Version successfully updated to $NEW_VERSION in all package files."
 echo "Please remember to:"

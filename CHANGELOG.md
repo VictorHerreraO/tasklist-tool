@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.2] - 2026-03-13
+
+### Added
+- **Logging Infrastructure**: Introduced a dedicated "Tasklist Tool" VS Code Output Channel for system logs and error reporting.
+
+### Fixed
+- **Activation Crash**: Resolved a critical `import.meta.url` collision in `@tasklist/core` preventing extension activation in bundled CommonJS environments.
+- **Error Visibility**: Wrapped the extension activation flow in error traps to ensure initialization failures are reported to the user.
+
 ## [0.3.1] - 2026-03-13
 
 ### Fixed

@@ -2,7 +2,7 @@
   "name": "tasklist-tool",
   "displayName": "Tasklist Tool",
   "description": "A VS Code extension for structured task and artifact management for AI agents.",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "publisher": "local",
   "repository": {
     "type": "git",
@@ -301,27 +301,27 @@
     "commands": [
       {
         "command": "tasklist.refresh",
-        "title": "Refresh Task List",
+        "title": "Tasks: Refresh Task List",
         "icon": "$(refresh)"
       },
       {
         "command": "tasklist.startTask",
-        "title": "Start Task",
+        "title": "Tasks: Start Task",
         "icon": "$(play)"
       },
       {
         "command": "tasklist.closeTask",
-        "title": "Close Task",
+        "title": "Tasks: Close Task",
         "icon": "$(check)"
       },
       {
         "command": "tasklist.promoteTask",
-        "title": "Promote to Project",
+        "title": "Tasks: Promote to Project",
         "icon": "$(chevron-up)"
       },
       {
         "command": "tasklist.createTask",
-        "title": "Create Task",
+        "title": "Tasks: Create Task",
         "icon": "$(add)"
       }
     ],

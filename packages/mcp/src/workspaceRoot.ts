@@ -10,6 +10,7 @@
  *   2. `process.cwd()` (current working directory at server start)
  */
 
+import * as path from 'path';
 import { TaskManager, ArtifactRegistry, ArtifactService } from '@tasklist/core';
 
 /**
@@ -43,15 +44,22 @@ export const workspaceRoot: string = resolveWorkspaceRoot();
 export const taskManager = new TaskManager(workspaceRoot);
 
 /**
+ * Absolute path to the @tasklist/core package root, used for built-in templates.
+ *
+ * In an ESM environment (MCP), we use import.meta.resolve to find the package entry point.
+ * The core package root is two levels up from out/index.js.
+ */
+const coreEntryPoint = import.meta.resolve('@tasklist/core').replace('file://', '');
+const corePackageRoot = path.resolve(path.dirname(coreEntryPoint), '..');
+
+/**
  * Registry of artifact type definitions (both built-in and workspace-level).
  *
  * `initialize()` is synchronous and loads `.ai.md` template files from:
- *   - Built-in: resolved via `__dirname` inside the CJS-compiled core module
- *     (the `extensionRoot` argument is stored internally but `initialize()`
- *      uses the module's own `__dirname`, so any string is acceptable here)
+ *   - Built-in: resolved via `corePackageRoot` (found dynamically via import.meta.resolve)
  *   - Workspace: `{workspaceRoot}/.tasks/templates/`
  */
-export const artifactRegistry = new ArtifactRegistry(workspaceRoot, workspaceRoot);
+export const artifactRegistry = new ArtifactRegistry(corePackageRoot, workspaceRoot);
 artifactRegistry.initialize();
 
 /** Provides read/write access to artifact files for a given task. */
