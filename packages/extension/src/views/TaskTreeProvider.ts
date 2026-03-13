@@ -15,7 +15,7 @@ export class TaskTreeProvider implements vscode.TreeDataProvider<TaskTreeItem> {
     /**
      * Updates the task manager and refreshes the view.
      */
-    setTaskManager(taskManager: TaskManager): void {
+    setTaskManager(taskManager: TaskManager | undefined): void {
         this.taskManager = taskManager;
         this.refresh();
     }

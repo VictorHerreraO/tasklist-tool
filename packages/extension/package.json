@@ -2,7 +2,7 @@
   "name": "tasklist-tool",
   "displayName": "Tasklist Tool",
   "description": "A VS Code extension for structured task and artifact management for AI agents.",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "publisher": "local",
   "repository": {
     "type": "git",
@@ -293,7 +293,8 @@
         {
           "id": "tasklist-tree",
           "name": "Tasks",
-          "type": "tree"
+          "type": "tree",
+          "when": "workspaceFolderCount > 0"
         }
       ]
     },
@@ -317,30 +318,35 @@
         "command": "tasklist.promoteTask",
         "title": "Promote to Project",
         "icon": "$(chevron-up)"
+      },
+      {
+        "command": "tasklist.createTask",
+        "title": "Create Task",
+        "icon": "$(add)"
       }
     ],
     "menus": {
       "view/title": [
         {
           "command": "tasklist.refresh",
-          "when": "view == tasklist-tree",
+          "when": "view == tasklist-tree && workspaceFolderCount > 0",
           "group": "navigation"
         }
       ],
       "view/item/context": [
         {
           "command": "tasklist.startTask",
-          "when": "view == tasklist-tree && viewItem =~ /task:open/",
+          "when": "view == tasklist-tree && viewItem =~ /task:open/ && workspaceFolderCount > 0",
           "group": "inline"
         },
         {
           "command": "tasklist.closeTask",
-          "when": "view == tasklist-tree && viewItem =~ /task:in-progress/",
+          "when": "view == tasklist-tree && viewItem =~ /task:in-progress/ && workspaceFolderCount > 0",
           "group": "inline"
         },
         {
           "command": "tasklist.promoteTask",
-          "when": "view == tasklist-tree && viewItem =~ /task:.*/",
+          "when": "view == tasklist-tree && viewItem =~ /task:.*/ && workspaceFolderCount > 0",
           "group": "1_modification"
         }
       ]
@@ -348,7 +354,13 @@
     "viewsWelcome": [
       {
         "view": "tasklist-tree",
-        "contents": "No tasks found. [Create Task](command:create_task)"
+        "contents": "No tasks found. [Create Task](command:tasklist.createTask)",
+        "when": "workspaceFolderCount > 0"
+      },
+      {
+        "view": "tasklist-tree",
+        "contents": "Tasklist Tool requires an open workspace folder. Please open a folder to manage tasks.\n[Open Folder](command:revealFileInOS)",
+        "when": "workspaceFolderCount == 0"
       }
     ]
   },
