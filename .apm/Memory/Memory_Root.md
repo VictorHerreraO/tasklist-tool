@@ -1,6 +1,6 @@
 # Tasklist Tool – Hierarchical Task Management – APM Memory Root
 **Memory Strategy:** Dynamic-MD
-**Project Overview:** This project introduces a two-level hierarchy (Projects and Subtasks) to the Tasklist Tool. It involves updating the core models, enhancing the TaskManager with promotion logic and nested index management, updating path resolution in ArtifactService, and exposing these features via MCP tools and the VS Code Extension.
+**Project Overview:** This project introduces a two-level hierarchy (Projects and Subtasks) to the Tasklist Tool. Following the core implementation, the system is being migrated to utilize VS Code Language Model (LM) Tools for the "Promote to Project" feature, enhancing agentic consistency and integration.
 
 ## Phase 01 – Test Infrastructure & Baseline Summary
 * Successfully established a standalone Mocha/Chai test environment in `packages/core` to enable independent logic verification.

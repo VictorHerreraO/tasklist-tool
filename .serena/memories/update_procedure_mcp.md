@@ -25,5 +25,5 @@ Since the binary is symlinked (`npm link`), recompiling the monorepo is sufficie
 ## Verification
 You can verify the update by checking the timestamp of the compiled index file:
 ```bash
-ls -alt packages/mcp/out/src/index.js
+ls -alt packages/mcp/out/index.js
 ```

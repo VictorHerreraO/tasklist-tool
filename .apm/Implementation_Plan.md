@@ -1,7 +1,7 @@
 # Tasklist Tool – Hierarchical Task Management - APM Implementation Plan
 **Memory Strategy:** Dynamic-MD
-**Last Modification:** Project Completed (Hierarchical Task Management). All 15 tasks across 5 phases successfully implemented and verified.
-**Project Overview:** This project introduces a two-level hierarchy (Projects and Subtasks) to the Tasklist Tool. It involves updating the core models, enhancing the TaskManager with promotion logic and nested index management, updating path resolution in ArtifactService, and exposing these features via MCP tools and the VS Code Extension.
+**Last Modification:** Plan extended by Setup Agent to include Phase 6 (LM Tool Migration).
+**Project Overview:** This project introduces a two-level hierarchy (Projects and Subtasks) to the Tasklist Tool. Following the initial implementation, the "Promote to Project" functionality is being migrated from a standard VS Code command to a Language Model (LM) Tool for improved agentic integration and consistency.
 
 ## Phase 1: Test Infrastructure & Baseline
 ### Task 1.1 – Core Test Environment Setup - Agent_QA
@@ -91,3 +91,38 @@
 - **Output:** Updated `packages/extension/README.md` and any relevant walkthrough/documentation files.
 - **Guidance:** Illustrate the new workflow with a "Project/Subtask" example.
 - **Depends on:** Task 5.2 Output
+
+## Phase 6: Language Model Tool Migration
+### Task 6.1 – Define promote_to_project in package.json - Agent_Extension
+- **Objective:** Update the extension manifest to swap the UI command for an LLM-accessible tool.
+- **Output:** Updated `packages/extension/package.json`.
+- **Guidance:** 1:1 mapping with MCP tool metadata.
+- Remove `tasklist.promoteToProject` from `commands` and `view/item/context` menu.
+- Add `promote_to_project` to `languageModelTools` mirroring MCP tool's descriptions.
+- Define `inputSchema` with a required `taskId` parameter.
+
+### Task 6.2 – Implement PromoteToProjectTool.ts - Agent_Extension
+- **Objective:** Implement the functional logic of the LM tool as a dedicated class.
+- **Output:** `packages/extension/src/tools/promoteToProjectTool.ts`.
+- **Guidance:** Follow existing tool patterns. **Depends on: Task 6.1 Output**
+1. Create file following existing patterns in `tools/`.
+2. Define interface `IPromoteToProjectParameters`.
+3. Implement `prepareInvocation` with confirmation: "Promote task 'ID' to a project?".
+4. Implement `invoke` calling `taskManager.promoteTaskToProject`.
+5. Return recovery-oriented error messages on failure (e.g., "Check taskId via list_tasks").
+
+### Task 6.3 – Wiring and Cleanup in extension.ts - Agent_Extension
+- **Objective:** Integrate the tool and remove the old command-based logic.
+- **Output:** Updated `packages/extension/src/extension.ts`.
+- **Guidance:** **Depends on: Task 6.2 Output**
+- Import and register `PromoteToProjectTool` with `vscode.lm.registerTool`.
+- Remove `vscode.commands.registerCommand` for `tasklist.promoteToProject`.
+- Cleanup unused imports like `TaskTreeItem`.
+
+### Task 6.4 – Update Hierarchical Verification Suite - Agent_QA
+- **Objective:** Ensure the system functions correctly through the new interaction model.
+- **Output:** Passing integration tests.
+- **Guidance:** **Depends on: Task 6.3 Output**
+1. Identify and refactor tests in `packages/extension/src/test/integration/` involving promotion.
+2. Update tests to verify promotion via LM Tool invocation or Core state.
+3. Validate complete hierarchical workflow ensures Tree View refresh logic still holds.

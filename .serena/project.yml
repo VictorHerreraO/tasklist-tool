@@ -116,7 +116,6 @@ base_modes:
 default_modes:
 - one-shot
 - no-onboarding
-- no-memories
 
 # initial prompt for the project. It will always be given to the LLM upon activating the project
 # (contrary to the memories, which are loaded on demand).
