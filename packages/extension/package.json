@@ -239,6 +239,26 @@
             "description"
           ]
         }
+      },
+      {
+        "name": "promote_to_project",
+        "toolReferenceName": "promote_to_project",
+        "displayName": "Promote to Project",
+        "modelDescription": "Converts an existing task into a project, enabling it to contain subtasks.",
+        "userDescription": "Promotes a task to a project.",
+        "canBeReferencedInPrompt": true,
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "taskId": {
+              "type": "string",
+              "description": "ID of the task to promote to a project."
+            }
+          },
+          "required": [
+            "taskId"
+          ]
+        }
       }
     ],
     "viewsContainers": {
@@ -256,27 +276,6 @@
           "id": "tasklist-tree",
           "name": "Tasks",
           "type": "tree"
-        }
-      ]
-    },
-    "commands": [
-      {
-        "command": "tasklist.promoteToProject",
-        "title": "Promote to Project",
-        "icon": "$(project)"
-      }
-    ],
-    "menus": {
-      "view/item/context": [
-        {
-          "command": "tasklist.promoteToProject",
-          "when": "view == tasklist-tree && viewItem == task",
-          "group": "inline"
-        },
-        {
-          "command": "tasklist.promoteToProject",
-          "when": "view == tasklist-tree && viewItem == task",
-          "group": "1_modification"
         }
       ]
     }
