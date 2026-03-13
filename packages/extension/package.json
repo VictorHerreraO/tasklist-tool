@@ -15,7 +15,6 @@
     "Other"
   ],
   "activationEvents": [
-    "onView:tasklist-tree",
     "onStartupFinished"
   ],
   "main": "./out/extension.js",
@@ -297,7 +296,61 @@
           "type": "tree"
         }
       ]
-    }
+    },
+    "commands": [
+      {
+        "command": "tasklist.refresh",
+        "title": "Refresh Task List",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "tasklist.startTask",
+        "title": "Start Task",
+        "icon": "$(play)"
+      },
+      {
+        "command": "tasklist.closeTask",
+        "title": "Close Task",
+        "icon": "$(check)"
+      },
+      {
+        "command": "tasklist.promoteTask",
+        "title": "Promote to Project",
+        "icon": "$(chevron-up)"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "tasklist.refresh",
+          "when": "view == tasklist-tree",
+          "group": "navigation"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "tasklist.startTask",
+          "when": "view == tasklist-tree && viewItem =~ /task:open/",
+          "group": "inline"
+        },
+        {
+          "command": "tasklist.closeTask",
+          "when": "view == tasklist-tree && viewItem =~ /task:in-progress/",
+          "group": "inline"
+        },
+        {
+          "command": "tasklist.promoteTask",
+          "when": "view == tasklist-tree && viewItem =~ /task:.*/",
+          "group": "1_modification"
+        }
+      ]
+    },
+    "viewsWelcome": [
+      {
+        "view": "tasklist-tree",
+        "contents": "No tasks found. [Create Task](command:create_task)"
+      }
+    ]
   },
   "scripts": {
     "vscode:prepublish": "npm run bundle",

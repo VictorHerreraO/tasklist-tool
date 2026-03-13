@@ -65,7 +65,7 @@ export class TaskTreeItem extends vscode.TreeItem {
 
         this.tooltip = `${this.task.id} (${this.task.status})`;
         this.description = this.task.status;
-        this.contextValue = this.task.type; // Used for context menus (e.g., promote to project)
+        this.contextValue = `${this.task.type}:${this.task.status}`;
 
         // Use distinct icons for projects vs tasks
         if (this.task.type === 'project') {
