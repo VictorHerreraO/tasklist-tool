@@ -10,7 +10,15 @@ export class TaskTreeProvider implements vscode.TreeDataProvider<TaskTreeItem> {
     readonly onDidChangeTreeData: vscode.Event<TaskTreeItem | undefined | null | void> =
         this._onDidChangeTreeData.event;
 
-    constructor(private taskManager: TaskManager) { }
+    constructor(private taskManager?: TaskManager) { }
+
+    /**
+     * Updates the task manager and refreshes the view.
+     */
+    setTaskManager(taskManager: TaskManager): void {
+        this.taskManager = taskManager;
+        this.refresh();
+    }
 
     /**
      * Refreshes the tree view data.
