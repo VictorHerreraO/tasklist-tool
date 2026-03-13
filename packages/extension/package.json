@@ -301,27 +301,27 @@
     "commands": [
       {
         "command": "tasklist.refresh",
-        "title": "Tasks: Refresh Task List",
+        "title": "TaskList: Refresh Task List",
         "icon": "$(refresh)"
       },
       {
         "command": "tasklist.startTask",
-        "title": "Tasks: Start Task",
+        "title": "TaskList: Start Task",
         "icon": "$(play)"
       },
       {
         "command": "tasklist.closeTask",
-        "title": "Tasks: Close Task",
+        "title": "TaskList: Close Task",
         "icon": "$(check)"
       },
       {
         "command": "tasklist.promoteTask",
-        "title": "Tasks: Promote to Project",
+        "title": "TaskList: Promote to Project",
         "icon": "$(chevron-up)"
       },
       {
         "command": "tasklist.createTask",
-        "title": "Tasks: Create Task",
+        "title": "TaskList: Create Task",
         "icon": "$(add)"
       }
     ],
