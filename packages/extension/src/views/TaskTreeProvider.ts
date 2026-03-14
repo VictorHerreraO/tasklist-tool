@@ -28,6 +28,7 @@ export class TaskTreeProvider implements vscode.TreeDataProvider<TaskTreeItem> {
     }
 
     getTreeItem(element: TaskTreeItem): vscode.TreeItem {
+        element.updateIcon();
         return element;
     }
 
@@ -149,8 +150,11 @@ export class TaskTreeItem extends vscode.TreeItem {
             title: 'Open Task Details',
             arguments: [this]
         };
+        this.updateIcon();
+    }
 
-        // Use distinct icons
+    public updateIcon(): void {
+        // Use distinct icons based on type and state
         if (this.task.type === 'project') {
             const isExpanded = this.collapsibleState === vscode.TreeItemCollapsibleState.Expanded;
 
@@ -164,7 +168,11 @@ export class TaskTreeItem extends vscode.TreeItem {
                     : new vscode.ThemeIcon('folder');
             }
         } else if (this.isActive) {
-            this.iconPath = new vscode.ThemeIcon('star');
+            if (this.task.status == TaskStatus.InProgress) {
+                this.iconPath = new vscode.ThemeIcon('star-full');
+            } else {
+                this.iconPath = new vscode.ThemeIcon('star');
+            }
         } else {
             this.iconPath = this.getIconForStatus(this.task.status);
         }

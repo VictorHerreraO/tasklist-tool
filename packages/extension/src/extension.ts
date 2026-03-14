@@ -36,9 +36,11 @@ export async function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(
         treeView,
         treeView.onDidExpandElement(e => {
+            e.element.collapsibleState = vscode.TreeItemCollapsibleState.Expanded;
             treeProvider.refresh(e.element);
         }),
         treeView.onDidCollapseElement(e => {
+            e.element.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
             treeProvider.refresh(e.element);
         })
     );
