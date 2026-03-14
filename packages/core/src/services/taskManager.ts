@@ -101,26 +101,27 @@ export class TaskManager {
     }
 
     /**
-     * Finds a task entry searching through the root index and then all sub-project indices.
+     * Finds a task entry within a specific parent project or the root index.
      * 
+     * @param id - The ID of the task to find.
+     * @param parentTaskId - Optional ID of the parent project. If provided, ONLY searches that project.
+     *                       If omitted, ONLY searches the root index.
      * @returns The entry and its containing index/parent ID, or undefined if not found.
      */
-    public findEntryGlobally(id: string): { entry: TaskEntry; index: TaskIndex; parentTaskId?: string } | undefined {
-        // 1. Check root
+    public findEntryGlobally(id: string, parentTaskId?: string): { entry: TaskEntry; index: TaskIndex; parentTaskId?: string } | undefined {
+        if (parentTaskId) {
+            const nestedIndex = this.readIndex(parentTaskId);
+            const nestedEntry = this.findEntry(nestedIndex, id);
+            if (nestedEntry) {
+                return { entry: nestedEntry, index: nestedIndex, parentTaskId };
+            }
+            return undefined;
+        }
+
         const rootIndex = this.readIndex();
         const rootEntry = this.findEntry(rootIndex, id);
         if (rootEntry) {
             return { entry: rootEntry, index: rootIndex };
-        }
-
-        // 2. Check all project sub-indices
-        const projects = rootIndex.tasks.filter(t => t.type === 'project');
-        for (const project of projects) {
-            const nestedIndex = this.readIndex(project.id);
-            const nestedEntry = this.findEntry(nestedIndex, id);
-            if (nestedEntry) {
-                return { entry: nestedEntry, index: nestedIndex, parentTaskId: project.id };
-            }
         }
         return undefined;
     }
@@ -254,32 +255,61 @@ export class TaskManager {
         return entry;
     }
 
-    /**
-     * Returns the currently active task entry, or `null` if none is active.
-     */
     getActiveTask(): TaskEntry | null {
-        const rootIndex = this.readIndex();
-        if (!rootIndex.activeTaskId) {
-            return null;
+        let currentParentId: string | undefined = undefined;
+        let currentActiveId = this.readIndex().activeTaskId;
+
+        if (!currentActiveId) return null;
+
+        let lastFoundEntry: TaskEntry | undefined = undefined;
+
+        while (currentActiveId) {
+            const result = this.findEntryGlobally(currentActiveId, currentParentId);
+            if (!result) break;
+
+            lastFoundEntry = result.entry;
+            if (lastFoundEntry.type === 'project') {
+                const projectIndex = this.readIndex(lastFoundEntry.id);
+                if (projectIndex.activeTaskId) {
+                    currentParentId = lastFoundEntry.id;
+                    currentActiveId = projectIndex.activeTaskId;
+                } else {
+                    break;
+                }
+            } else {
+                break;
+            }
         }
-        const result = this.findEntryGlobally(rootIndex.activeTaskId);
-        return result?.entry ?? null;
+
+        return lastFoundEntry ?? null;
     }
 
     /**
      * Sets `id` as the active task.
      *
      * @param id - ID of the task to activate.
+     * @param parentTaskId - Optional ID of the parent project.
+     * @param activateProject - Whether to also activate the parent project in the root index.
      * @throws {Error} If no task with `id` exists.
      */
-    activateTask(id: string): void {
-        const result = this.findEntryGlobally(id);
+    activateTask(id: string, parentTaskId?: string, activateProject: boolean = true): void {
+        const result = this.findEntryGlobally(id, parentTaskId);
         if (!result) {
-            throw new Error(`Cannot activate task '${id}': task not found.`);
+            throw new Error(`Cannot activate task '${id}': task not found${parentTaskId ? ` in project '${parentTaskId}'` : ''}.`);
         }
-        const rootIndex = this.readIndex();
-        rootIndex.activeTaskId = id;
-        this.writeIndex(rootIndex);
+
+        // 1. Update the index where the task is located
+        const targetIndex = result.index;
+        targetIndex.activeTaskId = id;
+        this.writeIndex(targetIndex, result.parentTaskId);
+
+        // 2. Conditionally activate the parent project in the root index
+        if (result.parentTaskId && activateProject) {
+            const rootIndex = this.readIndex();
+            rootIndex.activeTaskId = result.parentTaskId;
+            this.writeIndex(rootIndex);
+        }
+
         this.emitter.emit('didUpdateTask', { taskId: id, event: TaskEventType.Activated });
     }
 
