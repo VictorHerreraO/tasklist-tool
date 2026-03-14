@@ -100,14 +100,6 @@ export class TaskManager {
         return index.tasks.find(t => t.id === id);
     }
 
-    /**
-     * Finds a task entry within a specific parent project or the root index.
-     * 
-     * @param id - The ID of the task to find.
-     * @param parentTaskId - Optional ID of the parent project. If provided, ONLY searches that project.
-     *                       If omitted, ONLY searches the root index.
-     * @returns The entry and its containing index/parent ID, or undefined if not found.
-     */
     public findEntryGlobally(id: string, parentTaskId?: string): { entry: TaskEntry; index: TaskIndex; parentTaskId?: string } | undefined {
         if (parentTaskId) {
             const nestedIndex = this.readIndex(parentTaskId);
@@ -126,6 +118,26 @@ export class TaskManager {
         return undefined;
     }
 
+    /**
+     * Recursively searches for an entry in all project indices.
+     * Used internally for parent validation where the exact parent location might not be known.
+     */
+    private findEntryRecursive(id: string, currentParentId?: string): { entry: TaskEntry; index: TaskIndex; parentTaskId?: string } | undefined {
+        const index = this.readIndex(currentParentId);
+        const entry = this.findEntry(index, id);
+        if (entry) {
+            return { entry, index, parentTaskId: currentParentId };
+        }
+
+        for (const task of index.tasks) {
+            if (task.type === 'project') {
+                const found = this.findEntryRecursive(id, task.id);
+                if (found) return found;
+            }
+        }
+        return undefined;
+    }
+
     // ─── Public API ─────────────────────────────────────────────────────────
 
     /**
@@ -138,9 +150,10 @@ export class TaskManager {
      */
     createTask(id: string, type: 'task' | 'project' = 'task', parentTaskId?: string): TaskEntry {
         if (parentTaskId) {
-            // Verify parent task exists in the root index and is of type 'project'
-            const rootIndex = this.readIndex();
-            const parentEntry = this.findEntry(rootIndex, parentTaskId);
+            // Verify parent task exists and is of type 'project'
+            // We search recursively because the creator might not know the grandparent
+            const result = this.findEntryRecursive(parentTaskId);
+            const parentEntry = result?.entry;
             if (!parentEntry) {
                 throw new Error(`Parent task '${parentTaskId}' not found.`);
             }
@@ -225,11 +238,11 @@ export class TaskManager {
      * @throws {Error} If the task is not found or is already a project.
      */
     promoteTaskToProject(taskId: string): TaskEntry {
-        const index = this.readIndex();
-        const entry = this.findEntry(index, taskId);
-        if (!entry) {
+        const result = this.findEntryRecursive(taskId);
+        if (!result) {
             throw new Error(`Task '${taskId}' not found.`);
         }
+        const { entry, index, parentTaskId } = result;
         if (entry.type === 'project') {
             throw new Error(`Task '${taskId}' is already a project.`);
         }
@@ -251,7 +264,7 @@ export class TaskManager {
             this.writeIndex(subIndex, taskId);
         }
 
-        this.writeIndex(index);
+        this.writeIndex(index, parentTaskId);
         this.emitter.emit('didUpdateTask', { taskId: taskId, event: TaskEventType.Updated });
         return entry;
     }
@@ -307,8 +320,10 @@ export class TaskManager {
         // 2. Conditionally activate the parent project in the root index
         if (result.parentTaskId && activateProject) {
             const rootIndex = this.readIndex();
-            rootIndex.activeTaskId = result.parentTaskId;
-            this.writeIndex(rootIndex);
+            if (this.findEntry(rootIndex, result.parentTaskId)) {
+                rootIndex.activeTaskId = result.parentTaskId;
+                this.writeIndex(rootIndex);
+            }
         }
 
         this.emitter.emit('didUpdateTask', { taskId: id, event: TaskEventType.Activated });

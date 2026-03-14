@@ -120,26 +120,34 @@ describe('Hierarchy Integration Suite', () => {
             taskManager.createTask(subtaskId, 'task', projectId);
         });
 
-        it('should permit starting and closing a subtask using only its taskId', () => {
-            // Start
-            const startEntry = taskManager.start_task(subtaskId);
+        it('should require parentTaskId to start and close a subtask', () => {
+            // Start fails without parentTaskId
+            expect(() => taskManager.start_task(subtaskId)).to.throw(/Task 'child-task' not found\./);
+
+            // Start succeeds with parentTaskId
+            const startEntry = taskManager.start_task(subtaskId, projectId);
             expect(startEntry.status).to.equal(TaskStatus.InProgress);
 
-            // Close
-            const closeEntry = taskManager.close_task(subtaskId);
+            // Close fails without parentTaskId
+            expect(() => taskManager.close_task(subtaskId)).to.throw(/Task 'child-task' not found\./);
+
+            // Close succeeds with parentTaskId
+            const closeEntry = taskManager.close_task(subtaskId, projectId);
             expect(closeEntry.status).to.equal(TaskStatus.Closed);
         });
 
-        it('should permit activating a subtask using only its taskId', () => {
-            taskManager.activateTask(subtaskId);
+        it('should require parentTaskId to activate a subtask', () => {
+            expect(() => taskManager.activateTask(subtaskId)).to.throw(/Cannot activate task 'child-task': task not found\./);
+
+            taskManager.activateTask(subtaskId, projectId);
             const active = taskManager.getActiveTask();
 
             expect(active).to.not.be.null;
             expect(active?.id).to.equal(subtaskId);
         });
 
-        it('should correctly identify an active subtask regardless of its location', () => {
-            taskManager.activateTask(subtaskId);
+        it('should correctly identify an active subtask regardless of its location (recursively)', () => {
+            taskManager.activateTask(subtaskId, projectId);
 
             // New manager instance to ensure persistence
             const newManager = new TaskManager(workspaceRoot);
@@ -160,24 +168,29 @@ describe('Hierarchy Integration Suite', () => {
             taskManager.createTask(subtaskId, 'task', projectId);
         });
 
-        it('should create artifacts for a subtask in the correct nested directory', () => {
+        it('should require parentTaskId to create artifacts for a subtask if not found in root', () => {
             const content = '# Subtask Research';
-            artifactService.updateArtifact(subtaskId, 'research', content);
+            // Current findEntryGlobally in updateArtifact should search using parentTaskId
+            // If parentTaskId is missing, it only searches root.
+            expect(() => artifactService.updateArtifact(subtaskId, 'research', content)).to.throw(/Task 'child-task' not found\./);
+
+            artifactService.updateArtifact(subtaskId, 'research', content, projectId);
 
             const expectedPath = path.join(workspaceRoot, '.tasks', projectId, subtaskId, 'research.ai.md');
             expect(fs.existsSync(expectedPath)).to.be.true;
             expect(fs.readFileSync(expectedPath, 'utf-8')).to.equal(content);
         });
 
-        it('should list and locate artifacts in the nested structure', () => {
-            artifactService.updateArtifact(subtaskId, 'research', '# Research');
+        it('should require parentTaskId to list and locate artifacts in nested structure', () => {
+            artifactService.updateArtifact(subtaskId, 'research', '# Research', projectId);
 
-            const artifacts = artifactService.listArtifacts(subtaskId);
+            expect(() => artifactService.listArtifacts(subtaskId)).to.throw(/Task 'child-task' not found\./);
+
+            const artifacts = artifactService.listArtifacts(subtaskId, projectId);
             const research = artifacts.find(a => a.type.id === 'research');
 
             expect(research).to.not.be.undefined;
             expect(research?.exists).to.be.true;
-            // Verify path is correctly resolving hierarchically
             expect(research?.path).to.contain(path.join('.tasks', projectId, subtaskId));
         });
     });
@@ -188,7 +201,7 @@ describe('Hierarchy Integration Suite', () => {
             const s1 = 'sub-1';
             taskManager.createTask(p1, 'project');
             taskManager.createTask(s1, 'task', p1);
-            artifactService.updateArtifact(s1, 'research', '# Content');
+            artifactService.updateArtifact(s1, 'research', '# Content', p1);
 
             const tasksPath = path.join(workspaceRoot, '.tasks');
             expect(fs.existsSync(tasksPath)).to.be.true;
