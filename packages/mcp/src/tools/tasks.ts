@@ -74,14 +74,23 @@ server.tool(
     'activate_task',
     'Set a task as the currently active task. ' +
     'Only one task can be active at a time; activating a different task replaces the previous active task. ' +
-    'The task must exist in the workspace index.',
+    'The task must exist in the workspace index. ' +
+    'For subtasks, parentTaskId MUST be provided to avoid "Task not found" errors.',
     {
         taskId: z
             .string()
             .min(1)
             .describe('ID of the task to activate (e.g. "feature-login").'),
+        parentTaskId: z
+            .string()
+            .optional()
+            .describe('Optional ID of the parent project. Required for subtasks.'),
+        activateProject: z
+            .boolean()
+            .optional()
+            .describe('Whether to also activate the parent project in the root index. Defaults to true.'),
     },
-    ({ taskId }) => handleActivateTask(taskManager, { taskId })
+    ({ taskId, parentTaskId, activateProject }) => handleActivateTask(taskManager, { taskId, parentTaskId, activateProject })
 );
 
 server.tool(
@@ -96,28 +105,38 @@ server.tool(
     'start_task',
     'Transition a task from "open" → "in-progress". ' +
     'Only tasks in "open" status can be started. ' +
-    'Attempting to start a task in any other state returns an error with guidance.',
+    'Attempting to start a task in any other state returns an error with guidance. ' +
+    'For subtasks, parentTaskId MUST be provided to avoid "Task not found" errors.',
     {
         taskId: z
             .string()
             .min(1)
             .describe('ID of the task to start (must be in "open" status).'),
+        parentTaskId: z
+            .string()
+            .optional()
+            .describe('Optional ID of the parent project. Required for subtasks.'),
     },
-    ({ taskId }) => handleStartTask(taskManager, { taskId })
+    ({ taskId, parentTaskId }) => handleStartTask(taskManager, { taskId, parentTaskId })
 );
 
 server.tool(
     'close_task',
     'Transition a task from "in-progress" → "closed". ' +
     'The task must currently be "in-progress" (call start_task first if it is "open"). ' +
-    'Attempting to close a task in any other state returns an error with guidance.',
+    'Attempting to close a task in any other state returns an error with guidance. ' +
+    'For subtasks, parentTaskId MUST be provided to avoid "Task not found" errors.',
     {
         taskId: z
             .string()
             .min(1)
             .describe('ID of the task to close (must be in "in-progress" status).'),
+        parentTaskId: z
+            .string()
+            .optional()
+            .describe('Optional ID of the parent project. Required for subtasks.'),
     },
-    ({ taskId }) => handleCloseTask(taskManager, { taskId })
+    ({ taskId, parentTaskId }) => handleCloseTask(taskManager, { taskId, parentTaskId })
 );
 
 server.tool(

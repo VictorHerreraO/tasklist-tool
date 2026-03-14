@@ -118,17 +118,18 @@ export async function handleCreateTask(
 
 export async function handleActivateTask(
     manager: TaskManager,
-    input: { taskId: string }
+    input: { taskId: string; parentTaskId?: string; activateProject?: boolean }
 ): Promise<McpToolResult> {
-    const { taskId } = input;
+    const { taskId, parentTaskId, activateProject } = input;
     try {
-        manager.activateTask(taskId);
+        manager.activateTask(taskId, parentTaskId, activateProject);
         return successResult(`Task '${taskId}' is now the active task.`);
     } catch (err: unknown) {
         const message = toErrorMessage(err);
         if (message.includes('task not found')) {
+            const context = parentTaskId ? ` in project '${parentTaskId}'` : '';
             return errorResult(
-                `Cannot activate task '${taskId}': task not found. ` +
+                `Cannot activate task '${taskId}': task not found${context}. ` +
                 `Use 'list_tasks' to see available task IDs, then retry with a valid taskId.`
             );
         }
@@ -159,19 +160,20 @@ export async function handleDeactivateTask(
 
 export async function handleStartTask(
     manager: TaskManager,
-    input: { taskId: string }
+    input: { taskId: string; parentTaskId?: string }
 ): Promise<McpToolResult> {
-    const { taskId } = input;
+    const { taskId, parentTaskId } = input;
     try {
-        const entry = manager.start_task(taskId);
+        const entry = manager.start_task(taskId, parentTaskId);
         return successResult(
             `Task '${entry.id}' has been started. Status is now '${entry.status}'.`
         );
     } catch (err: unknown) {
         const message = toErrorMessage(err);
         if (message.includes('not found')) {
+            const context = parentTaskId ? ` in project '${parentTaskId}'` : '';
             return errorResult(
-                `Cannot start task '${taskId}': task not found. ` +
+                `Cannot start task '${taskId}': task not found${context}. ` +
                 `Use 'list_tasks' to see available tasks, then retry with a valid taskId.`
             );
         }
@@ -193,19 +195,20 @@ export async function handleStartTask(
 
 export async function handleCloseTask(
     manager: TaskManager,
-    input: { taskId: string }
+    input: { taskId: string; parentTaskId?: string }
 ): Promise<McpToolResult> {
-    const { taskId } = input;
+    const { taskId, parentTaskId } = input;
     try {
-        const entry = manager.close_task(taskId);
+        const entry = manager.close_task(taskId, parentTaskId);
         return successResult(
             `Task '${entry.id}' has been closed. Status is now '${entry.status}'.`
         );
     } catch (err: unknown) {
         const message = toErrorMessage(err);
         if (message.includes('not found')) {
+            const context = parentTaskId ? ` in project '${parentTaskId}'` : '';
             return errorResult(
-                `Cannot close task '${taskId}': task not found. ` +
+                `Cannot close task '${taskId}': task not found${context}. ` +
                 `Use 'list_tasks' to see available tasks, then retry with a valid taskId.`
             );
         }
