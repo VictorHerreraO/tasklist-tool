@@ -1,153 +1,62 @@
-# Tasklist Tool – Hierarchical Task Management - APM Implementation Plan
+# Tighten Subtask API - APM Implementation Plan
 **Memory Strategy:** Dynamic-MD
-**Last Modification:** Phase 7 complete; Hierarchical tool parity achieved for Extension LM Tools.
-**Project Overview:** This project introduces a two-level hierarchy (Projects and Subtasks) to the Tasklist Tool. Following the initial implementation, the "Promote to Project" functionality is being migrated from a standard VS Code command to a Language Model (LM) Tool for improved agentic integration and consistency.
+**Last Modification:** Plan creation by the Setup Agent.
+**Project Overview:** This project standardizes subtask access by requiring `parentTaskId` and implementing a cascading activation model across the Core, MCP, and VS Code extension layers. Includes improved error messaging for AI agents and Active Path highlighting in the UI.
 
-## Phase 1: Test Infrastructure & Baseline
-### Task 1.1 – Core Test Environment Setup - Agent_QA
-- **Objective:** Configure a dedicated test runner and compilation config for `packages/core` to enable localized testing.
-- **Output:** Updated `packages/core/package.json` with test dependencies and scripts, `.mocharc.json`, and `tsconfig.json` for independent compilation.
-- **Guidance:** Use Mocha and Chai, matching the patterns in the extension package but tailored for core. Ensure the tsconfig enables independent package compilation.
-- **Depends on:** Plan creation
-
-### Task 1.2 – Relocate TaskManager Tests - Agent_Core
-- **Objective:** Move existing TaskManager tests to the core package.
-- **Output:** `packages/core/src/test/taskManager.test.ts` with updated local imports.
-- **Guidance:** Ensure all imports point to local source files instead of the `@tasklist/core` package.
-- **Depends on:** Task 1.1 Output by Agent_QA
-
-### Task 1.3 – Relocate ArtifactService Tests - Agent_Core
-- **Objective:** Move existing ArtifactService tests to the core package.
-- **Output:** `packages/core/src/test/artifactService.test.ts` with updated local imports.
-- **Guidance:** Similar to Task 1.2, ensure import paths are correctly refactored.
-- **Depends on:** Task 1.1 Output by Agent_QA
-
-## Phase 2: Foundation (Models & Manager)
-### Task 2.1 – Update Task Models - Agent_Core
-- **Objective:** Introduce the `type` field and `parentTaskId` to the core task interfaces.
-- **Output:** Updated `packages/core/src/models/task.ts` with `type: 'task' | 'project'` and optional `parentTaskId: string`.
-- **Guidance:** Ensure the `TaskEntry` interface is updated to support both fields.
-- **Depends on:** Task 1.2 Output
-
-### Task 2.2 – TaskManager Core Update - Agent_Core
-- **Objective:** Update basic TaskManager operations to satisfy the new model requirements.
-- **Output:** Updated `TaskManager.ts` with `createTask` supporting the `type` field and `listTasks` filtering for top-level items by default.
-- **Guidance:** `listTasks` should only return items without a `parentTaskId` unless a specific filter is applied.
-- **Depends on:** Task 2.1 Output
-
-## Phase 3: Logic (Promotion & Nested Resolution)
-### Task 3.1 – Implement Task Promotion Logic - Agent_Core
-- **Objective:** Implement the mechanism to transition a task into a project.
-- **Output:** `promoteTaskToProject(taskId: string)` method in `TaskManager` that updates the index and creates a nested `index.json`.
-- **Guidance:** Change the task type to 'project' and immediately create a folder `.tasks/${taskId}/` containing an empty `TaskIndex`.
-- **Depends on:** Task 2.2 Output
-
-### Task 3.2 – Nested Index Management - Agent_Core
-- **Objective:** Enable creation and listing of subtasks within projects with strict index synchronization.
-- **Output:** Updated `createTask` and `listTasks` in `TaskManager` to handle nested directory structures and maintain parent/child index consistency.
-- **Guidance:** Subtasks must be created in `.tasks/${parentTaskId}/index.json`. Ensure that any changes to a project's subtasks are reflected in the parent-level index if necessary (or properly filtered).
-- **Depends on:** Task 3.1 Output
-
-### Task 3.3 – Artifact Path Resolution Update - Agent_Core
-- **Objective:** Adapt path resolution to support the nested filesystem structure.
-- **Output:** Updated `ArtifactService` that correctly resolves paths for subtask artifacts (e.g., `.tasks/${projectId}/${taskId}/artifact.md`).
-- **Guidance:** The `projectId` must be passed explicitly to artifact operations as per discovery findings. Update constructor or initialization if needed to handle base project paths.
-- **Depends on:** Task 3.2 Output
-
-## Phase 4: Integration (MCP Tools & Testing)
-### Task 4.1 – MCP Tool Definition Update - Agent_MCP (Completed)
-- **Objective:** Expose the new hierarchy features to AI agents via the MCP server.
-- **Output:** Updated tool schemas in `packages/mcp/src/tools/tasks.ts` for `create_task`, `list_tasks`, and a new `promote_to_project` tool.
-- **Guidance:** Update `create_task` schema to include `parentTaskId?: string` and `type?: 'task' | 'project'`. Update descriptions to clearly explain the Project/Task two-level hierarchy.
-- **Depends on:** Task 3.3 Output by Agent_Core
-
-### Task 4.2 – Hierarchical Verification Suite - Agent_QA (Completed)
-- **Objective:** Implement comprehensive tests for the new hierarchical features.
-- **Output:** `packages/core/src/test/hierarchy.test.ts` with passing tests for promotion and subtask management.
-- **Guidance:** Follow existing test patterns for directory mocking and index validation. Include recursive cleanup tests.
-- **Depends on:** Task 4.1 Output by Agent_MCP
-
-### Task 4.3 – Documentation Update - Agent_MCP (Completed)
-- **Objective:** Update system templates to reflect the new hierarchy.
-- **Output:** Updated `packages/core/src/templates/task-details.ai.md` mentioning the project type.
-- **Guidance:** Ensure agents are aware they can now organize work into projects.
-- **Depends on:** Task 4.1 Output
-
-## Phase 5: VS Code Extension Integration
-### Task 5.1 – Update Extension Tree Provider - Agent_Extension (Completed)
-- **Objective:** Update the VS Code Tree View to render hierarchical tasks.
-- **Output:** Modified `packages/extension/src/views/TaskTreeProvider.ts` supporting nested `TreeItem` children.
-- **Guidance:** Ensure projects are expandable and subtasks are rendered correctly nested.
-- **Depends on:** Task 3.3 Output
-
-### Task 5.2 – Implement "Promote to Project" Command - Agent_Extension (Completed)
-- **Objective:** Add the UI command to the VS Code context menu.
-- **Output:** New command registration in `packages/extension/src/extension.ts` and `package.json`.
-- **Guidance:** Trigger the `TaskManager.promoteTaskToProject` method from the core.
-- **Depends on:** Task 5.1 Output
-
-### Task 5.3 – Extension Portfolio Update - Agent_Extension (Completed)
-- **Objective:** Update user-facing documentation for the extension.
-- **Output:** Updated `packages/extension/README.md` and any relevant walkthrough/documentation files.
-- **Guidance:** Illustrate the new workflow with a "Project/Subtask" example.
-- **Depends on:** Task 5.2 Output
-
-## Phase 6: Language Model Tool Migration
-### Task 6.1 – Define promote_to_project in package.json - Agent_Extension (Completed)
-- **Objective:** Update the extension manifest to swap the UI command for an LLM-accessible tool.
-- **Output:** Updated `packages/extension/package.json`.
-- **Guidance:** 1:1 mapping with MCP tool metadata.
-- Remove `tasklist.promoteToProject` from `commands` and `view/item/context` menu.
-- Add `promote_to_project` to `languageModelTools` mirroring MCP tool's descriptions.
-- Define `inputSchema` with a required `taskId` parameter.
-
-### Task 6.2 – Implement PromoteToProjectTool.ts - Agent_Extension (Completed)
-- **Objective:** Implement the functional logic of the LM tool as a dedicated class.
-- **Output:** `packages/extension/src/tools/promoteToProjectTool.ts`.
-- **Guidance:** Follow existing tool patterns. **Depends on: Task 6.1 Output**
-1. Create file following existing patterns in `tools/`.
-2. Define interface `IPromoteToProjectParameters`.
-3. Implement `prepareInvocation` with confirmation: "Promote task 'ID' to a project?".
-4. Implement `invoke` calling `taskManager.promoteTaskToProject`.
-5. Return recovery-oriented error messages on failure (e.g., "Check taskId via list_tasks").
-
-### Task 6.3 – Wiring and Cleanup in extension.ts - Agent_Extension (Completed)
-- **Objective:** Integrate the tool and remove the old command-based logic.
-- **Output:** Updated `packages/extension/src/extension.ts`.
-- **Guidance:** **Depends on: Task 6.2 Output**
-- Import and register `PromoteToProjectTool` with `vscode.lm.registerTool`.
-- Remove `vscode.commands.registerCommand` for `tasklist.promoteToProject`.
-- Cleanup unused imports like `TaskTreeItem`.
-
-### Task 6.4 – Update Hierarchical Verification Suite - Agent_QA (Completed)
-- **Objective:** Ensure the system functions correctly through the new interaction model.
-- **Output:** Passing integration tests.
-- **Guidance:** **Depends on: Task 6.3 Output**
-1. Identify and refactor tests in `packages/extension/src/test/integration/` involving promotion.
-2. Update tests to verify promotion via LM Tool invocation or Core state.
-3. Validate complete hierarchical workflow ensures Tree View refresh logic still holds.
-
-## Phase 7: Hierarchical Tool Parity
-### Task 7.1 – Update create_task & list_tasks Schemas - Agent_Extension (Completed)
-- **Objective:** Align extension LM tool schemas with core hierarchical capabilities.
-- **Output:** Updated `packages/extension/package.json`.
+## Phase 1: Core Logic Updates
+### Task 1.1 – Core TaskManager Updates - Agent_Core
+- **Objective:** Update `TaskManager` to enforce `parentTaskId` scoping and conditionally activate the parent project during subtask activation.
+- **Output:** Updated `packages/core/src/services/taskManager.ts`.
 - **Guidance:** 
-- Update `create_task` inputSchema to include optional `parentTaskId` (string) and `type` ('task' | 'project').
-- Update `list_tasks` inputSchema to include optional `parentTaskId` (string).
-- Ensure descriptions mirror the established hierarchical behavior.
+- Modify `findEntryGlobally(id, parentTaskId)` to ONLY search the specified parent index if `parentTaskId` is provided, and ONLY the root index if it's not.
+- Update `activateTask(id, parentTaskId, activateProject)` to update both the parent project's index and the root index (conditionally based on `activateProject` flag) when a subtask is activated.
+- Update `getActiveTask()` to recursively resolve active IDs to find the most specific active task.
 
-### Task 7.2 – Implement Hierarchical Logic in LM Tools - Agent_Extension (Completed)
-- **Objective:** Logic update for create/list tools to handle parent/child relationships.
-- **Output:** Updated `createTaskTool.ts` and `listTasksTool.ts`.
-- **Guidance:** **Depends on: Task 7.1 Output**
-- Update `createTaskTool.ts` to pass `type` and `parentTaskId` to `TaskManager.createTask`.
-- Update `listTasksTool.ts` to pass `parentTaskId` to `TaskManager.listTasks`.
-- Add validation logic to ensure tasks are created within valid projects.
+### Task 1.2 – Core Hierarchy Unit Tests - Agent_QA
+- **Objective:** Ensure unit tests cover the new scoping rules and conditional project activation.
+- **Output:** Passing tests in `packages/core/src/test/taskManager.test.ts`.
+- **Guidance:** **Depends on: Task 1.1 Output**
+- Add test scenarios verifying that subtasks cannot be accessed without their `parentTaskId`.
+- Add test scenarios verifying the `activateProject` flag appropriately cascades activation up to the root project index.
 
-### Task 7.3 – Final Hierarchy Verification - Agent_QA (Completed)
-- **Objective:** End-to-end verification of the full hierarchical toolset.
-- **Output:** Comprehensive passing test suite.
-- **Guidance:** **Depends on: Task 7.2 Output**
-- Add tests for creating subtasks via `create_task`.
-- Add tests for listing subtasks via `list_tasks`.
-- Verify tree view correctly responds to LM-created subtasks.
+## Phase 2: MCP Layer Updates
+### Task 2.1 – Update MCP Tool Schemas - Agent_MCP
+- **Objective:** Update Zod schemas to accept `parentTaskId` and `activateProject`.
+- **Output:** Updated `packages/mcp/src/tools/tasks.ts`.
+- **Guidance:** **Depends on: Task 1.1 Output by Agent_Core**
+- Update schemas for `activate_task`, `start_task`, and `close_task` to accept an optional `parentTaskId` string.
+- Update `activate_task` to accept an optional `activateProject` boolean.
+- Explicitly update the descriptions of these tools to guide AI agents to provide the `parentTaskId` when interacting with subtasks.
+
+### Task 2.2 – Implement Hierarchical MCP Handlers - Agent_MCP
+- **Objective:** Connect the updated schemas to the core logic, including recovery-oriented error messaging.
+- **Output:** Updated `packages/mcp/src/handlers/taskHandlers.ts`.
+- **Guidance:** **Depends on: Task 2.1 Output**
+- Update handlers to pass the new `parentTaskId` and `activateProject` parameters to the `TaskManager` methods.
+- Implement explicit error handling/catch blocks for task lookups: if a task is not found, return string feedback instructing the agent: "Task not found. AI Agent might have forgot to provide a parent project id."
+
+## Phase 3: VS Code Extension Updates
+### Task 3.1 – Synchronize Extension LM Tools - Agent_Extension
+- **Objective:** Align the extension's LM tool schemas and implementations with the new hierarchy requirements and improved error messaging.
+- **Output:** Updated `package.json`, `interfaces.ts`, and tool implementations within `packages/extension/src/tools/`.
+- **Guidance:** **Depends on: Task 1.1 Output by Agent_Core**
+- Update `package.json` schemas for `parentTaskId` and `activateProject`. Update the corresponding TS interfaces in `interfaces.ts`.
+- Implement parameter passing in tool execution logic (`createTaskTool`, `listTasksTool`, `activateTaskTool`, `startTaskTool`, `closeTaskTool`).
+- Ensure the recovery-oriented error message ("Task not found. AI Agent might have forgot to provide a parent project id.") is returned fully to the LM if lookup fails.
+
+### Task 3.2 – Update Extension Sidebar Commands & UI - Agent_Extension
+- **Objective:** Update UI context commands to support subtasks and implement "Active Path" highlighting in the tree view.
+- **Output:** Updated `packages/extension/src/extension.ts` and `packages/extension/src/views/TaskTreeProvider.ts`.
+- **Guidance:** **Depends on: Task 1.1 Output by Agent_Core**
+- Update context menu commands (Start, Close, Promote) in `extension.ts` to pass the selected item's hierarchical context.
+- Modify `TaskTreeProvider.ts` to visually highlight both the parent project and the active subtask simultaneously (Active Path).
+- Ensure the tree view refreshes properly on hierarchical state changes.
+
+## Phase 4: Final Verification
+### Task 4.1 – Final System Verification & UI Walkthrough - Agent_QA
+- **Objective:** Verify end-to-end functionality of the hierarchical system across all layers and update tasklist documentation.
+- **Output:** Updated tasklist documentation artifacts for `tighten-subtask-api` project and subtasks.
+- **Guidance:** **Depends on: Task 3.2 Output by Agent_Extension**
+1. Run automated integration tests (if any exist) for the VS Code extension to ensure recent changes haven't broken the test suite. Ensure changes to package/core work properly on MCP and Extension environments.
+2. Ad-Hoc Delegation - Request manual User validation of Extension UI (Active Path).
+3. Use the tasklist tools (e.g., `update_artifact`) to compile all test results and User feedback into the artifacts for the `tighten-subtask-api` project and `tsa-verification` subtask, ensuring all documentation lives in the official artifacts.
