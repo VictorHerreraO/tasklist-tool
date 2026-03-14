@@ -209,12 +209,13 @@ export class TaskManager {
     }
 
     /**
-     * Checks if a task with the given `id` exists anywhere in the workspace.
+     * Checks if a task with the given `id` exists in the specified parent project or root.
      * 
      * @param id - The ID of the task to check.
+     * @param parentTaskId - Optional ID of the parent project.
      */
-    taskExists(id: string): boolean {
-        return this.findEntryGlobally(id) !== undefined;
+    taskExists(id: string, parentTaskId?: string): boolean {
+        return this.findEntryGlobally(id, parentTaskId) !== undefined;
     }
 
     /**
@@ -327,14 +328,15 @@ export class TaskManager {
      * Transitions a task from `open` → `in-progress`.
      *
      * @param id - ID of the task to start.
+     * @param parentTaskId - Optional ID of the parent project.
      * @throws {Error} If the task is not found or not in `open` status.
      */
-    start_task(id: string): TaskEntry {
-        const result = this.findEntryGlobally(id);
+    start_task(id: string, parentTaskId?: string): TaskEntry {
+        const result = this.findEntryGlobally(id, parentTaskId);
         if (!result) {
-            throw new Error(`Task '${id}' not found.`);
+            throw new Error(`Task '${id}' not found${parentTaskId ? ` in project '${parentTaskId}'` : ''}.`);
         }
-        const { entry, index, parentTaskId } = result;
+        const { entry, index, parentTaskId: resolvedParentId } = result;
         if (entry.status !== TaskStatus.Open) {
             throw new Error(
                 `Cannot start task '${id}': current status is '${entry.status}', expected 'open'.`
@@ -342,7 +344,7 @@ export class TaskManager {
         }
         entry.status = TaskStatus.InProgress;
         entry.updatedAt = Date.now();
-        this.writeIndex(index, parentTaskId);
+        this.writeIndex(index, resolvedParentId);
         this.emitter.emit('didUpdateTask', { taskId: id, event: TaskEventType.StatusChanged });
         return entry;
     }
@@ -351,14 +353,15 @@ export class TaskManager {
      * Transitions a task from `in-progress` → `closed`.
      *
      * @param id - ID of the task to close.
+     * @param parentTaskId - Optional ID of the parent project.
      * @throws {Error} If the task is not found or not in `in-progress` status.
      */
-    close_task(id: string): TaskEntry {
-        const result = this.findEntryGlobally(id);
+    close_task(id: string, parentTaskId?: string): TaskEntry {
+        const result = this.findEntryGlobally(id, parentTaskId);
         if (!result) {
-            throw new Error(`Task '${id}' not found.`);
+            throw new Error(`Task '${id}' not found${parentTaskId ? ` in project '${parentTaskId}'` : ''}.`);
         }
-        const { entry, index, parentTaskId } = result;
+        const { entry, index, parentTaskId: resolvedParentId } = result;
         if (entry.status !== TaskStatus.InProgress) {
             throw new Error(
                 `Cannot close task '${id}': current status is '${entry.status}', expected 'in-progress'. Use 'start_task' first.`
@@ -366,7 +369,7 @@ export class TaskManager {
         }
         entry.status = TaskStatus.Closed;
         entry.updatedAt = Date.now();
-        this.writeIndex(index, parentTaskId);
+        this.writeIndex(index, resolvedParentId);
         this.emitter.emit('didUpdateTask', { taskId: id, event: TaskEventType.StatusChanged });
         return entry;
     }
