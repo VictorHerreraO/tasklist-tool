@@ -33,7 +33,15 @@ export async function activate(context: vscode.ExtensionContext) {
         treeDataProvider: treeProvider,
         showCollapseAll: true
     });
-    context.subscriptions.push(treeView);
+    context.subscriptions.push(
+        treeView,
+        treeView.onDidExpandElement(e => {
+            treeProvider.refresh(e.element);
+        }),
+        treeView.onDidCollapseElement(e => {
+            treeProvider.refresh(e.element);
+        })
+    );
 
     // 2. Command Registration (Early)
     context.subscriptions.push(

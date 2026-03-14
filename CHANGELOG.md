@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.4] - 2026-03-14
+
+### Added
+- **Intelligent Sorting**: Implemented folder-style sorting in the Task Explorer. Projects are now pinned to the top, followed by tasks, both sorted alphabetically using natural numeric sorting (e.g., `task-2` comes before `task-10`).
+
+### Changed
+- **Visual Iconography**: Modernized the icon set for projects and tasks. Projects now use `folder-opened` icons, and status indicators have been updated for better visual clarity (e.g., using `loading~spin` for in-progress tasks).
+- **Tooltips**: Normalized tooltip formatting to display task types in uppercase for a more consistent feel.
+
 ## [0.3.3] - 2026-03-13
 
 ### Fixed

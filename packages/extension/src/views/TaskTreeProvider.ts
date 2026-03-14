@@ -21,10 +21,10 @@ export class TaskTreeProvider implements vscode.TreeDataProvider<TaskTreeItem> {
     }
 
     /**
-     * Refreshes the tree view data.
+     * Refreshes the tree view data for the entire tree or a specific item.
      */
-    refresh(): void {
-        this._onDidChangeTreeData.fire();
+    refresh(item?: TaskTreeItem): void {
+        this._onDidChangeTreeData.fire(item);
     }
 
     getTreeItem(element: TaskTreeItem): vscode.TreeItem {
@@ -46,7 +46,28 @@ export class TaskTreeProvider implements vscode.TreeDataProvider<TaskTreeItem> {
             tasks = this.taskManager.listTasks();
         }
 
+        // Apply folder-like sorting
+        this.sortTasks(tasks);
+
         return tasks.map(task => new TaskTreeItem(task, task.id === activeTask?.id));
+    }
+
+    /**
+     * Sorts tasks folder-style: Projects a-z followed by Tasks a-z.
+     */
+    private sortTasks(tasks: TaskEntry[]): void {
+        tasks.sort((a, b) => {
+            // Priority 1: Type (Projects first)
+            if (a.type === 'project' && b.type !== 'project') {
+                return -1;
+            }
+            if (a.type !== 'project' && b.type === 'project') {
+                return 1;
+            }
+
+            // Priority 2: ID (alphabetical natural sort)
+            return a.id.localeCompare(b.id, undefined, { numeric: true, sensitivity: 'base' });
+        });
     }
 
     /**
@@ -114,7 +135,7 @@ export class TaskTreeItem extends vscode.TreeItem {
         const tooltip = new vscode.MarkdownString();
         tooltip.appendMarkdown(`### **Task:** ${this.task.id}\n\n`);
         tooltip.appendMarkdown(`**Status:** ${this.task.status.toUpperCase()}\n\n`);
-        tooltip.appendMarkdown(`**Type:** ${this.task.type}\n\n`);
+        tooltip.appendMarkdown(`**Type:** ${this.task.type.toUpperCase()}\n\n`);
         tooltip.appendMarkdown(`**Created:** ${createdDate}\n\n`);
         tooltip.appendMarkdown(`---\n\n`);
         tooltip.appendMarkdown(`*Click to open details*`);
@@ -130,10 +151,20 @@ export class TaskTreeItem extends vscode.TreeItem {
         };
 
         // Use distinct icons
-        if (this.isActive) {
-            this.iconPath = new vscode.ThemeIcon('star-full', new vscode.ThemeColor('charts.yellow'));
-        } else if (this.task.type === 'project') {
-            this.iconPath = new vscode.ThemeIcon('project');
+        if (this.task.type === 'project') {
+            const isExpanded = this.collapsibleState === vscode.TreeItemCollapsibleState.Expanded;
+
+            if (this.isActive) {
+                this.iconPath = isExpanded
+                    ? new vscode.ThemeIcon('root-folder-opened')
+                    : new vscode.ThemeIcon('root-folder');
+            } else {
+                this.iconPath = isExpanded
+                    ? new vscode.ThemeIcon('folder-opened')
+                    : new vscode.ThemeIcon('folder');
+            }
+        } else if (this.isActive) {
+            this.iconPath = new vscode.ThemeIcon('star');
         } else {
             this.iconPath = this.getIconForStatus(this.task.status);
         }
@@ -142,12 +173,12 @@ export class TaskTreeItem extends vscode.TreeItem {
     private getIconForStatus(status: TaskStatus): vscode.ThemeIcon {
         switch (status) {
             case TaskStatus.InProgress:
-                return new vscode.ThemeIcon('sync~spin');
+                return new vscode.ThemeIcon('loading~spin');
             case TaskStatus.Closed:
-                return new vscode.ThemeIcon('pass-filled');
+                return new vscode.ThemeIcon('pass');
             case TaskStatus.Open:
             default:
-                return new vscode.ThemeIcon('circle-outline');
+                return new vscode.ThemeIcon('circle-large-outline');
         }
     }
 }
