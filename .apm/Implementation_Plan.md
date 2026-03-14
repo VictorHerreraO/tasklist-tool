@@ -1,6 +1,6 @@
 # Tighten Subtask API - APM Implementation Plan
 **Memory Strategy:** Dynamic-MD
-**Last Modification:** Added Task 1.3 to address start_task/close_task gaps identified in Task 1.1.
+**Last Modification:** Added Task 2.3 to Phase 2 for documentation and refined Task 2.2 guidance.
 **Project Overview:** This project standardizes subtask access by requiring `parentTaskId` and implementing a cascading activation model across the Core, MCP, and VS Code extension layers. Includes improved error messaging for AI agents and Active Path highlighting in the UI.
 
 ## Phase 1: Core Logic Updates
@@ -44,6 +44,13 @@
 - **Guidance:** **Depends on: Task 2.1 Output by Agent_MCP**
 - Update handlers to pass the new `parentTaskId` and `activateProject` parameters to the `TaskManager` methods.
 - Implement explicit error handling/catch blocks for task lookups: if a task is not found, return string feedback instructing the agent: "Task not found. AI Agent might have forgot to provide a parent project id."
+
+### Task 2.3 – Update MCP Documentation & Examples - Agent_MCP
+- **Objective:** Update the MCP server's documentation and example tool calls to reflect the new hierarchical capabilities.
+- **Output:** Updated `packages/mcp/README.md` (if exists) and internal examples.
+- **Guidance:** **Depends on: Task 2.1 Output by Agent_MCP**
+- Document the new `parentTaskId` and `activateProject` parameters.
+- Provide clear examples of how to activate, start, and close subtasks using the MCP tools.
 
 ## Phase 3: VS Code Extension Updates
 ### Task 3.1 – Synchronize Extension LM Tools - Agent_Extension
