@@ -69,21 +69,69 @@ suite('TaskTreeProvider Logic', () => {
             assert.strictEqual(item.contextValue, 'task:open:active');
         });
 
-        test('closed task has pass-filled icon', () => {
+        test('closed task has pass icon', () => {
             manager.createTask('closed-task');
             manager.start_task('closed-task');
             const entry = manager.close_task('closed-task');
             const item = new TaskTreeItem(entry);
             const icon = item.iconPath as vscode.ThemeIcon;
-            assert.strictEqual(icon.id, 'pass-filled');
+            assert.strictEqual(icon.id, 'pass');
         });
 
-        test('in-progress task has sync~spin icon', () => {
+        test('in-progress task has loading~spin icon', () => {
             manager.createTask('ip-task');
             const entry = manager.start_task('ip-task');
             const item = new TaskTreeItem(entry);
             const icon = item.iconPath as vscode.ThemeIcon;
-            assert.strictEqual(icon.id, 'sync~spin');
+            assert.strictEqual(icon.id, 'loading~spin');
+        });
+
+        test('active in-progress task has star-full icon', () => {
+            manager.createTask('active-ip');
+            manager.start_task('active-ip');
+            manager.activateTask('active-ip');
+            const entry = manager.listTasks().find(t => t.id === 'active-ip')!;
+            const item = new TaskTreeItem(entry, true);
+            const icon = item.iconPath as vscode.ThemeIcon;
+            assert.strictEqual(icon.id, 'star-full');
+        });
+
+        test('active open task has star icon', () => {
+            manager.createTask('active-open');
+            manager.activateTask('active-open');
+            const entry = manager.listTasks().find(t => t.id === 'active-open')!;
+            const item = new TaskTreeItem(entry, true);
+            const icon = item.iconPath as vscode.ThemeIcon;
+            assert.strictEqual(icon.id, 'star');
+        });
+
+        test('project has folder icon when collapsed', () => {
+            const entry = manager.createTask('my-proj', 'project');
+            const item = new TaskTreeItem(entry);
+            item.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
+            item.updateIcon();
+            const icon = item.iconPath as vscode.ThemeIcon;
+            assert.strictEqual(icon.id, 'folder');
+        });
+
+        test('project has folder-opened icon when expanded', () => {
+            const entry = manager.createTask('my-proj', 'project');
+            const item = new TaskTreeItem(entry);
+            item.collapsibleState = vscode.TreeItemCollapsibleState.Expanded;
+            item.updateIcon();
+            const icon = item.iconPath as vscode.ThemeIcon;
+            assert.strictEqual(icon.id, 'folder-opened');
+        });
+
+        test('active project has root-folder icon when collapsed', () => {
+            manager.createTask('active-proj', 'project');
+            manager.activateTask('active-proj');
+            const entry = manager.listTasks().find(t => t.id === 'active-proj')!;
+            const item = new TaskTreeItem(entry, true);
+            item.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
+            item.updateIcon();
+            const icon = item.iconPath as vscode.ThemeIcon;
+            assert.strictEqual(icon.id, 'root-folder');
         });
 
         test('tooltip contains Markdown with task metadata', () => {
@@ -93,6 +141,28 @@ suite('TaskTreeProvider Logic', () => {
             assert.ok(tooltip.value.includes('### **Task:** meta-task'));
             assert.ok(tooltip.value.includes('**Status:** OPEN'));
             assert.ok(tooltip.value.includes('*Click to open details*'));
+        });
+    });
+
+    suite('TaskTreeProvider Sorting', () => {
+        test('sortTasks puts projects before tasks', async () => {
+            manager.createTask('z-task', 'task');
+            manager.createTask('a-proj', 'project');
+
+            const children = await provider.getChildren();
+            assert.strictEqual(children[0].task.id, 'a-proj');
+            assert.strictEqual(children[1].task.id, 'z-task');
+        });
+
+        test('sortTasks uses natural numeric sorting for IDs', async () => {
+            manager.createTask('task-10', 'task');
+            manager.createTask('task-2', 'task');
+            manager.createTask('task-1', 'task');
+
+            const children = await provider.getChildren();
+            assert.strictEqual(children[0].task.id, 'task-1');
+            assert.strictEqual(children[1].task.id, 'task-2');
+            assert.strictEqual(children[2].task.id, 'task-10');
         });
     });
 });
