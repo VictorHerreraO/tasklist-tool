@@ -22,3 +22,14 @@
   - [Task 2.1 - Update MCP Tool Schemas](.apm/Memory/Phase_02_Foundation_Models_Manager/Task_2_1_Update_MCP_Tool_Schemas.md)
   - [Task 2.3 - Update MCP Documentation & Examples](.apm/Memory/Phase_02_Foundation_Models_Manager/Task_2_3_Update_MCP_Documentation_Examples.md)
 
+## Phase 3 – VS Code Extension Updates Summary
+* Updated VS Code extension LM tool schemas and implementations to support hierarchical scoping and project activation.
+* Enhanced error messages with recovery guidance.
+* Updated sidebar context menu commands (`startTask`, `closeTask`, `openTaskDetails`) to correctly extract and pass `parentTaskId`.
+* Implemented "Active Path" highlighting in `TaskTreeProvider.ts` to dynamically show both active subtasks and parent projects recursively.
+* Involved Agents: Agent_Extension
+* Logs:
+  - [Task 3.1 - Synchronize Extension LM Tools](.apm/Memory/Phase_03_VS_Code_Extension_Updates/Task_3_1_Synchronize_Extension_LM_Tools.md)
+  - [Task 3.2 - Update Extension Sidebar Commands & UI](.apm/Memory/Phase_03_VS_Code_Extension_Updates/Task_3_2_Update_Extension_Sidebar_Commands_UI.md)
+
+

@@ -36,17 +36,27 @@ export async function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(
         treeView,
         treeView.onDidExpandElement(e => {
-            e.element.collapsibleState = vscode.TreeItemCollapsibleState.Expanded;
-            treeProvider.refresh(e.element);
+            treeProvider.setExpanded(e.element.task.id, true);
         }),
         treeView.onDidCollapseElement(e => {
-            e.element.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
-            treeProvider.refresh(e.element);
+            treeProvider.setExpanded(e.element.task.id, false);
         })
     );
 
     // 2. Command Registration (Early)
     context.subscriptions.push(
+        vscode.commands.registerCommand('tasklist.activateTask', async (node: TaskTreeItem) => {
+            if (!taskManager) {
+                return;
+            }
+            try {
+                await taskManager.activateTask(node.task.id, node.task.parentTaskId);
+            } catch (error) {
+                const msg = `Failed to activate task: ${error instanceof Error ? error.message : String(error)}`;
+                outputChannel.appendLine(msg);
+                vscode.window.showErrorMessage(msg);
+            }
+        }),
         vscode.commands.registerCommand('tasklist.refresh', () => {
             treeProvider.refresh();
         }),

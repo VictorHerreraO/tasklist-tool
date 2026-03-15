@@ -329,6 +329,11 @@
     },
     "commands": [
       {
+        "command": "tasklist.activateTask",
+        "title": "TaskList: Activate Task",
+        "icon": "$(zap)"
+      },
+      {
         "command": "tasklist.refresh",
         "title": "TaskList: Refresh Task List",
         "icon": "$(refresh)"
@@ -363,6 +368,11 @@
         }
       ],
       "view/item/context": [
+        {
+          "command": "tasklist.activateTask",
+          "when": "view == tasklist-tree && viewItem =~ /.+:(open|in-progress|closed)$/ && workspaceFolderCount > 0",
+          "group": "inline"
+        },
         {
           "command": "tasklist.startTask",
           "when": "view == tasklist-tree && viewItem =~ /task:open/ && workspaceFolderCount > 0",
