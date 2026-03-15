@@ -50,7 +50,26 @@ export class TaskTreeProvider implements vscode.TreeDataProvider<TaskTreeItem> {
         // Apply folder-like sorting
         this.sortTasks(tasks);
 
-        return tasks.map(task => new TaskTreeItem(task, task.id === activeTask?.id));
+        return tasks.map(task => new TaskTreeItem(task, this.isPathActive(task, activeTask)));
+    }
+
+    /**
+     * Checks if a task is part of the active path (meaning it is either the active task itself, 
+     * or a parent project of the active task).
+     */
+    private isPathActive(task: TaskEntry, activeTask: TaskEntry | null): boolean {
+        if (!activeTask) return false;
+        if (task.id === activeTask.id) return true;
+
+        // Walk up from the activeTask to see if 'task' is an ancestor
+        let currentId = activeTask.parentTaskId;
+        while (currentId) {
+            if (task.id === currentId) return true;
+            if (!this.taskManager) break;
+            const parentResult = this.taskManager.findEntryGlobally(currentId);
+            currentId = parentResult?.entry?.parentTaskId;
+        }
+        return false;
     }
 
     /**
@@ -84,7 +103,7 @@ export class TaskTreeProvider implements vscode.TreeDataProvider<TaskTreeItem> {
         const result = this.taskManager.findEntryGlobally(parentId);
         if (result) {
             const activeTask = this.taskManager.getActiveTask();
-            return new TaskTreeItem(result.entry, result.entry.id === activeTask?.id);
+            return new TaskTreeItem(result.entry, this.isPathActive(result.entry, activeTask));
         }
         return undefined;
     }
@@ -101,7 +120,7 @@ export class TaskTreeProvider implements vscode.TreeDataProvider<TaskTreeItem> {
         const result = this.taskManager.findEntryGlobally(taskId);
         if (result) {
             const activeTask = this.taskManager.getActiveTask();
-            return new TaskTreeItem(result.entry, result.entry.id === activeTask?.id);
+            return new TaskTreeItem(result.entry, this.isPathActive(result.entry, activeTask));
         }
         return undefined;
     }
