@@ -7,11 +7,20 @@ A suite of tools designed for structured task and artifact management, perfectly
 The Tasklist Tool provides a framework for tracking development progress and maintaining structured documentation (artifacts) alongside code. By exposing Language Model Tools, AI agents can interactively manage tasks, state, and generate documentation using standard templates without requiring manual developer involvement.
 
 ### Repository Structure
+
+```mermaid
+graph TD
+    User["User/Agent"] --> Extension["tasklist-tool Extension"]
+    User --> MCP["@tasklist/mcp Server"]
+    Extension --> Core["@tasklist/core"]
+    MCP --> Core
+```
+
 This project is structured as a **monorepo** consisting of three npm packages:
 
-- `@tasklist/core` (`packages/core/`): Shared business logic, task models, and Markdown template engine.
-- `tasklist-tool` (`packages/extension/`): The VS Code extension wrapper.
-- `@tasklist/mcp` (`packages/mcp/`): The standalone Model Context Protocol server.
+- [**@tasklist/core**](./packages/core/README.md): Shared business logic, task models, and Markdown template engine.
+- [**tasklist-tool**](./packages/extension/README.md): The VS Code extension wrapper.
+- [**@tasklist/mcp**](./packages/mcp/README.md): The standalone Model Context Protocol server.
 
 ## Key Features
 
@@ -24,23 +33,75 @@ This project is structured as a **monorepo** consisting of three npm packages:
 
 ## Available Agent Tools
 
-Both the VS Code Extension and the MCP Server expose the exact same **12 core tools**:
+Both the VS Code Extension and the MCP Server expose the exact same **12 core tools** for comprehensive task and artifact management.
 
 ### Task Lifecycle Tools
-- `list_tasks`: Retrieve tasks from the workspace. Supports filtering by project ID to see subtasks.
-- `create_task`: Initialize a new task or project.
-- `promote_to_project`: Convert an existing task into a project.
-- `activate_task`: Set the current focus task.
-- `deactivate_task`: Clear the active focus task.
-- `start_task`: Transition a task to in-progress.
-- `close_task`: Transition an in-progress task to closed.
+
+#### `list_tasks`
+Lists tasks in the workspace, optionally filtered by status or project.
+- `status` (enum, optional): `open`, `in-progress`, or `closed`.
+- `parentTaskId` (string, optional): Filter tasks by parent project ID. If omitted, only top-level tasks/projects are returned.
+
+#### `create_task`
+Initialize a new task or project.
+- `taskId` (string, required): Unique identifier (e.g., `feature-login`).
+- `type` (enum, optional): `task` or `project`. Defaults to `task`.
+- `parentTaskId` (string, optional): ID of the parent project.
+
+#### `activate_task`
+Sets a task as the currently active task.
+- `taskId` (string, required): The ID of the task to activate.
+- `parentTaskId` (string, optional): The ID of the parent project. **Required for subtasks.**
+- `activateProject` (boolean, optional): If `true`, also sets the parent project as the active task. Defaults to `true`.
+
+#### `deactivate_task`
+Clears the currently active task. (No parameters)
+
+#### `start_task`
+Transitions a task from `open` to `in-progress`.
+- `taskId` (string, required): The ID of the task to start.
+- `parentTaskId` (string, optional): The ID of the parent project. **Required for subtasks.**
+
+#### `close_task`
+Transitions a task from `in-progress` to `closed`.
+- `taskId` (string, required): The ID of the task to close.
+- `parentTaskId` (string, optional): The ID of the parent project. **Required for subtasks.**
+
+#### `promote_to_project`
+Converts an existing task into a project, enabling it to contain subtasks.
+- `taskId` (string, required): ID of the task to promote.
+
+---
 
 ### Artifact Management Tools
-- `list_artifact_types`: Discover available documentation structures.
-- `register_artifact_type`: Create custom documentation templates.
-- `list_artifacts`: Show populated and available artifacts per task.
-- `get_artifact`: Retrieve documentation structure or content.
-- `update_artifact`: Write finished documentation for a task.
+
+#### `list_artifact_types`
+List all registered artifact types (built-in and custom). (No parameters)
+
+#### `register_artifact_type`
+Register a new custom artifact type and template.
+- `id` (string, required): Unique ID for the type (e.g., `sprint-retro`).
+- `displayName` (string, required): Human-friendly name.
+- `description` (string, required): Description of the artifact.
+- `templateBody` (string, optional): Markdown template body.
+
+#### `list_artifacts`
+Show populated and available artifacts per task.
+- `taskId` (string, optional): Defaults to the active task.
+- `parentTaskId` (string, optional): Required for subtasks.
+
+#### `get_artifact`
+Retrieve documentation structure or content.
+- `artifactType` (string, required): The ID of the artifact type.
+- `taskId` (string, optional): Defaults to the active task.
+- `parentTaskId` (string, optional): Required for subtasks.
+
+#### `update_artifact`
+Write finished documentation for a task.
+- `artifactType` (string, required): The ID of the artifact type.
+- `content` (string, required): Full Markdown body (no frontmatter).
+- `taskId` (string, optional): Defaults to the active task.
+- `parentTaskId` (string, optional): Required for subtasks.
 
 ## Getting Started
 
