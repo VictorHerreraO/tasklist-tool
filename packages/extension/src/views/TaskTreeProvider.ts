@@ -204,19 +204,19 @@ export class TaskTreeItem extends vscode.TreeItem {
             this.description = this.task.status;
         }
 
-        const createdDate = new Date(this.task.createdAt).toLocaleString();
+        const updatedDate = new Date(this.task.updatedAt).toLocaleString();
 
         // Markdown tooltip for a premium feel
         const tooltip = new vscode.MarkdownString();
         tooltip.appendMarkdown(`### **Task:** ${this.task.id}\n\n`);
-        tooltip.appendMarkdown(`**Status:** ${this.task.status.toUpperCase()}\n\n`);
-        tooltip.appendMarkdown(`**Type:** ${this.task.type.toUpperCase()}\n\n`);
-        tooltip.appendMarkdown(`**Created:** ${createdDate}\n\n`);
+        tooltip.appendMarkdown(`---\n\n`);
+        tooltip.appendMarkdown(`* **Status:** ${this.task.status.toUpperCase()}\n`);
+        tooltip.appendMarkdown(`* **Updated:** ${updatedDate}\n`);
         tooltip.appendMarkdown(`---\n\n`);
         tooltip.appendMarkdown(`*Click to open details*`);
         this.tooltip = tooltip;
 
-        this.contextValue = `${this.task.type}:${this.task.status}${this.isActive ? ':active' : ''}`;
+        this.contextValue = `${this.task.parentTaskId ? 'subtask' : this.task.type}:${this.task.status}${this.isActive ? ':active' : ''}`;
 
         // Set click command
         this.command = {

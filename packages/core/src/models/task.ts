@@ -22,6 +22,11 @@ export enum TaskEventType {
 }
 
 /**
+ * Formal types for entries in the tasklist.
+ */
+export type TaskType = 'task' | 'project' | 'subtask';
+
+/**
  * Represents a single task entry as stored in `.tasks/index.json`.
  */
 export interface TaskEntry {
@@ -37,8 +42,8 @@ export interface TaskEntry {
     /** Unix timestamp (ms) when the task was last updated. */
     updatedAt: number;
 
-    /** Entry type: 'task' or 'project'. Defaults to 'task'. */
-    type: 'task' | 'project';
+    /** Entry type: 'task', 'project', or 'subtask'. */
+    type: TaskType;
 
     /** Optional parent task ID for hierarchical structures. */
     parentTaskId?: string;

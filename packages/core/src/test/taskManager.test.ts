@@ -299,6 +299,15 @@ describe('TaskManager', () => {
                 /Task 'already-p' is already a project\./
             );
         });
+
+        it('throws if task is a subtask', () => {
+            manager.createTask('parent-p', 'project');
+            manager.createTask('sub-t', 'task', 'parent-p');
+            assert.throws(
+                () => manager.promoteTaskToProject('sub-t'),
+                /Cannot promote task 'sub-t' to project: it is a subtask of 'parent-p'/
+            );
+        });
     });
 
     // ── Activation / Deactivation ──────────────────────────────────────────

@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { EventEmitter } from 'events';
-import { TaskEntry, TaskEventType, TaskIndex, TaskStatus } from '../models/task.js';
+import { TaskEntry, TaskEventType, TaskIndex, TaskStatus, TaskType } from '../models/task.js';
 
 /** Relative path (from workspace root) to the index file. */
 const INDEX_REL_PATH = path.join('.tasks', 'index.json');
@@ -148,7 +148,7 @@ export class TaskManager {
      * @param parentTaskId - Optional ID of the parent task.
      * @throws {Error} If a task with `id` already exists or parent is invalid.
      */
-    createTask(id: string, type: 'task' | 'project' = 'task', parentTaskId?: string): TaskEntry {
+    createTask(id: string, type: TaskType = 'task', parentTaskId?: string): TaskEntry {
         if (parentTaskId) {
             // Verify parent task exists and is of type 'project'
             // We search recursively because the creator might not know the grandparent
@@ -243,6 +243,9 @@ export class TaskManager {
             throw new Error(`Task '${taskId}' not found.`);
         }
         const { entry, index, parentTaskId } = result;
+        if (parentTaskId) {
+            throw new Error(`Cannot promote task '${taskId}' to project: it is a subtask of '${parentTaskId}'. Promotion is only supported for top-level tasks.`);
+        }
         if (entry.type === 'project') {
             throw new Error(`Task '${taskId}' is already a project.`);
         }
