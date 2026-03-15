@@ -61,6 +61,23 @@ export interface ITaskIdParams {
      * (e.g. `'feature-login'`).
      */
     taskId: string;
+
+    /**
+     * Optional ID of the parent project. If the task is a subtask,
+     * providing this is required for strict scoping.
+     */
+    parentTaskId?: string;
+}
+
+/**
+ * Parameters for the `activate_task` tool.
+ */
+export interface IActivateTaskParams extends ITaskIdParams {
+    /**
+     * Optional boolean to also activate the parent project in the root index
+     * if the task is a subtask. Defaults to true.
+     */
+    activateProject?: boolean;
 }
 
 // ─── Artifact Tool Interfaces ────────────────────────────────────────────────
@@ -74,6 +91,12 @@ export interface IListArtifactsParams {
      * When omitted, the tool falls back to the currently active task.
      */
     taskId?: string;
+
+    /**
+     * Optional ID of the parent project. If the task is a subtask,
+     * providing this is required for strict scoping.
+     */
+    parentTaskId?: string;
 }
 
 /**
@@ -91,6 +114,12 @@ export interface IGetArtifactParams {
      * When omitted, the tool falls back to the currently active task.
      */
     taskId?: string;
+
+    /**
+     * Optional ID of the parent project. If the task is a subtask,
+     * providing this is required for strict scoping.
+     */
+    parentTaskId?: string;
 }
 
 /**
@@ -114,6 +143,12 @@ export interface IUpdateArtifactParams {
      * When omitted, the tool falls back to the currently active task.
      */
     taskId?: string;
+
+    /**
+     * Optional ID of the parent project. If the task is a subtask,
+     * providing this is required for strict scoping.
+     */
+    parentTaskId?: string;
 }
 
 /**

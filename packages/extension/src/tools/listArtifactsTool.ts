@@ -33,15 +33,16 @@ export class ListArtifactsTool implements vscode.LanguageModelTool<IListArtifact
     }
 
     /**
-     * Resolves the effective task ID from explicit input or the active task.
+     * Resolves the effective task context from explicit input or the active task.
      *
      * @param taskId - The optional task ID from the tool input.
-     * @returns The resolved task ID.
+     * @param parentTaskId - The optional parent task ID from the tool input.
+     * @returns The resolved task ID and optional parentTaskId.
      * @throws {Error} If no taskId is supplied and no task is currently active.
      */
-    private resolveTaskId(taskId?: string): string {
+    private resolveTaskContext(taskId?: string, parentTaskId?: string): { taskId: string; parentTaskId?: string } {
         if (taskId) {
-            return taskId;
+            return { taskId, parentTaskId };
         }
         const active = this.taskManager.getActiveTask();
         if (!active) {
@@ -50,7 +51,7 @@ export class ListArtifactsTool implements vscode.LanguageModelTool<IListArtifact
                 'Pass an explicit taskId or activate a task first using `activate_task`.'
             );
         }
-        return active.id;
+        return { taskId: active.id, parentTaskId: active.parentTaskId };
     }
 
     /**
@@ -64,13 +65,15 @@ export class ListArtifactsTool implements vscode.LanguageModelTool<IListArtifact
         options: vscode.LanguageModelToolInvocationPrepareOptions<IListArtifactsParams>,
         _token: vscode.CancellationToken
     ): Promise<vscode.PreparedToolInvocation> {
-        const taskLabel = options.input.taskId ?? 'the active task';
+        const { taskId, parentTaskId } = options.input;
+        const taskLabel = taskId ?? 'the active task';
+        const parentLabel = parentTaskId ? ` in project '${parentTaskId}'` : '';
         return {
-            invocationMessage: `Listing artifacts for ${taskLabel}`,
+            invocationMessage: `Listing artifacts for ${taskLabel}${parentLabel}`,
             confirmationMessages: {
                 title: 'List Artifacts',
                 message: new vscode.MarkdownString(
-                    `List all artifact types and their on-disk status for task \`${taskLabel}\`.`
+                    `List all artifact types and their on-disk status for task \`${taskLabel}\`${parentLabel}.`
                 ),
             },
         };
@@ -89,10 +92,10 @@ export class ListArtifactsTool implements vscode.LanguageModelTool<IListArtifact
         options: vscode.LanguageModelToolInvocationOptions<IListArtifactsParams>,
         _token: vscode.CancellationToken
     ): Promise<vscode.LanguageModelToolResult> {
-        const taskId = this.resolveTaskId(options.input.taskId);
+        const { taskId, parentTaskId } = this.resolveTaskContext(options.input.taskId, options.input.parentTaskId);
 
         try {
-            const infos = this.artifactService.listArtifacts(taskId);
+            const infos = this.artifactService.listArtifacts(taskId, parentTaskId);
 
             const lines = infos.map(
                 info =>
@@ -101,7 +104,7 @@ export class ListArtifactsTool implements vscode.LanguageModelTool<IListArtifact
 
             return new vscode.LanguageModelToolResult([
                 new vscode.LanguageModelTextPart(
-                    `Artifacts for task '${taskId}':\n\n${lines.join('\n')}\n\n` +
+                    `Artifacts for task '${taskId}'${parentTaskId ? ` in project '${parentTaskId}'` : ''}:\n\n${lines.join('\n')}\n\n` +
                     `✔ = file saved on disk | ○ = template available, no file yet`
                 ),
             ]);
@@ -110,7 +113,8 @@ export class ListArtifactsTool implements vscode.LanguageModelTool<IListArtifact
             if (message.includes('not found')) {
                 throw new Error(
                     `Task '${taskId}' not found. ` +
-                    `Use 'list_tasks' to see available tasks, then retry with a valid taskId.`
+                    `AI Agent might have forgot to provide a parent project id. ` +
+                    `Use 'list_tasks' to see available tasks, then retry with a valid taskId and parentTaskId if applicable.`
                 );
             }
             throw new Error(

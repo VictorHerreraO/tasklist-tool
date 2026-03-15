@@ -33,13 +33,14 @@ export class CloseTaskTool implements vscode.LanguageModelTool<ITaskIdParams> {
         options: vscode.LanguageModelToolInvocationPrepareOptions<ITaskIdParams>,
         _token: vscode.CancellationToken
     ): Promise<vscode.PreparedToolInvocation> {
-        const { taskId } = options.input;
+        const { taskId, parentTaskId } = options.input;
+        const parentLabel = parentTaskId ? ` in project '${parentTaskId}'` : '';
         return {
-            invocationMessage: `Closing task '${taskId}'`,
+            invocationMessage: `Closing task '${taskId}'${parentLabel}`,
             confirmationMessages: {
                 title: 'Close Task',
                 message: new vscode.MarkdownString(
-                    `Transition task \`${taskId}\` from status \`in-progress\` → \`closed\`. ` +
+                    `Transition task \`${taskId}\`${parentLabel} from status \`in-progress\` → \`closed\`. ` +
                     `The task must currently be in \`in-progress\` status.`
                 ),
             },
@@ -58,10 +59,10 @@ export class CloseTaskTool implements vscode.LanguageModelTool<ITaskIdParams> {
         options: vscode.LanguageModelToolInvocationOptions<ITaskIdParams>,
         _token: vscode.CancellationToken
     ): Promise<vscode.LanguageModelToolResult> {
-        const { taskId } = options.input;
+        const { taskId, parentTaskId } = options.input;
 
         try {
-            const entry = this.taskManager.close_task(taskId);
+            const entry = this.taskManager.close_task(taskId, parentTaskId);
             return new vscode.LanguageModelToolResult([
                 new vscode.LanguageModelTextPart(
                     `Task '${entry.id}' has been closed. Status is now '${entry.status}'.`
@@ -73,7 +74,8 @@ export class CloseTaskTool implements vscode.LanguageModelTool<ITaskIdParams> {
             if (message.includes('not found')) {
                 throw new Error(
                     `Cannot close task '${taskId}': task not found. ` +
-                    `Use 'list_tasks' to see available tasks, then retry with a valid taskId.`
+                    `AI Agent might have forgot to provide a parent project id. ` +
+                    `Use 'list_tasks' to see available tasks, then retry with a valid taskId and parentTaskId if applicable.`
                 );
             }
             if (message.includes('expected \'in-progress\'')) {

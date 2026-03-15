@@ -85,7 +85,14 @@ export class CreateTaskTool implements vscode.LanguageModelTool<ICreateTaskParam
                     `Choose a different taskId or use 'list_tasks' to review existing tasks.`
                 );
             }
-            if (message.includes('not found') || message.includes('is not a project')) {
+            if (message.includes('not found')) {
+                throw new Error(
+                    `Cannot create subtask: parent project '${parentTaskId}' not found. ` +
+                    `AI Agent might have forgot to provide the correct parent project id. ` +
+                    `Use 'list_tasks' to see available projects.`
+                );
+            }
+            if (message.includes('is not a project')) {
                 throw new Error(
                     `Cannot create subtask: ${message} ` +
                     `Please ensure you provide the correct ID of an existing project. Use 'list_tasks' to see available projects.`

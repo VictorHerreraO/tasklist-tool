@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { TaskManager } from '@tasklist/core';
-import { ITaskIdParams } from './interfaces.js';
+import { IActivateTaskParams } from './interfaces.js';
 
 /**
  * Language model tool that sets a task as the currently active task.
@@ -9,9 +9,9 @@ import { ITaskIdParams } from './interfaces.js';
  * automatically replaces the previous active task. The task must exist
  * in the workspace index.
  *
- * Implements `vscode.LanguageModelTool<ITaskIdParams>`.
+ * Implements `vscode.LanguageModelTool<IActivateTaskParams>`.
  */
-export class ActivateTaskTool implements vscode.LanguageModelTool<ITaskIdParams> {
+export class ActivateTaskTool implements vscode.LanguageModelTool<IActivateTaskParams> {
     /** The underlying service used to persist the activation change. */
     private readonly taskManager: TaskManager;
 
@@ -30,16 +30,17 @@ export class ActivateTaskTool implements vscode.LanguageModelTool<ITaskIdParams>
      * @returns Confirmation metadata for the VS Code tool-calling UI.
      */
     async prepareInvocation(
-        options: vscode.LanguageModelToolInvocationPrepareOptions<ITaskIdParams>,
+        options: vscode.LanguageModelToolInvocationPrepareOptions<IActivateTaskParams>,
         _token: vscode.CancellationToken
     ): Promise<vscode.PreparedToolInvocation> {
-        const { taskId } = options.input;
+        const { taskId, parentTaskId } = options.input;
+        const parentLabel = parentTaskId ? ` in project '${parentTaskId}'` : '';
         return {
-            invocationMessage: `Activating task '${taskId}'`,
+            invocationMessage: `Activating task '${taskId}'${parentLabel}`,
             confirmationMessages: {
                 title: 'Activate Task',
                 message: new vscode.MarkdownString(
-                    `Set task \`${taskId}\` as the currently active task. ` +
+                    `Set task \`${taskId}\`${parentLabel} as the currently active task. ` +
                     `Any previously active task will be deactivated.`
                 ),
             },
@@ -55,16 +56,16 @@ export class ActivateTaskTool implements vscode.LanguageModelTool<ITaskIdParams>
      * @throws {Error} If the task does not exist.
      */
     async invoke(
-        options: vscode.LanguageModelToolInvocationOptions<ITaskIdParams>,
+        options: vscode.LanguageModelToolInvocationOptions<IActivateTaskParams>,
         _token: vscode.CancellationToken
     ): Promise<vscode.LanguageModelToolResult> {
-        const { taskId } = options.input;
+        const { taskId, parentTaskId, activateProject } = options.input;
 
         try {
-            this.taskManager.activateTask(taskId);
+            this.taskManager.activateTask(taskId, parentTaskId, activateProject);
             return new vscode.LanguageModelToolResult([
                 new vscode.LanguageModelTextPart(
-                    `Task '${taskId}' is now the active task.`
+                    `Task '${taskId}' is now the active task${parentTaskId ? ` in project '${parentTaskId}'` : ''}.`
                 ),
             ]);
         } catch (err: unknown) {
@@ -72,7 +73,8 @@ export class ActivateTaskTool implements vscode.LanguageModelTool<ITaskIdParams>
             if (message.includes('task not found')) {
                 throw new Error(
                     `Cannot activate task '${taskId}': task not found. ` +
-                    `Use 'list_tasks' to see available task IDs, then retry with a valid taskId.`
+                    `AI Agent might have forgot to provide a parent project id. ` +
+                    `Use 'list_tasks' to see available tasks, then retry with a valid taskId and parentTaskId if applicable.`
                 );
             }
             throw new Error(
