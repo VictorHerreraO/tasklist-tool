@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.5] - 2026-03-14
+
+### Added
+- **Active Path Highlighting**: Implemented active path highlighting in the VS Code task tree so that parent projects are highlighted alongside their active subtasks.
+- **Hierarchical Task Scoping**: Added `parentTaskId` and `activateProject` parameters to the `activate_task`, `start_task`, and `close_task` MCP and VS Code extension tools.
+- **MCP Documentation**: Created comprehensive `README.md` for the MCP server documenting hierarchical task management, strict scoping requirements, and updated tool parameters.
+
+### Changed
+- **Strict Scoping Enforcement**: Updated `TaskManager` and `ArtifactService` to tightly require `parentTaskId` for subtask operations and implemented recursive task parsing for active paths.
+- **Error Recovery**: Enhanced error messages inside extension tools to actively guide AI agents to provide a parent project ID when encountering "Task not found" errors.
+
 ## [0.3.4] - 2026-03-14
 
 ### Added

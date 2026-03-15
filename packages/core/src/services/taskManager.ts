@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { EventEmitter } from 'events';
-import { TaskEntry, TaskEventType, TaskIndex, TaskStatus } from '../models/task.js';
+import { TaskEntry, TaskEventType, TaskIndex, TaskStatus, TaskType } from '../models/task.js';
 
 /** Relative path (from workspace root) to the index file. */
 const INDEX_REL_PATH = path.join('.tasks', 'index.json');
@@ -100,26 +100,39 @@ export class TaskManager {
         return index.tasks.find(t => t.id === id);
     }
 
-    /**
-     * Finds a task entry searching through the root index and then all sub-project indices.
-     * 
-     * @returns The entry and its containing index/parent ID, or undefined if not found.
-     */
-    public findEntryGlobally(id: string): { entry: TaskEntry; index: TaskIndex; parentTaskId?: string } | undefined {
-        // 1. Check root
+    public findEntryGlobally(id: string, parentTaskId?: string): { entry: TaskEntry; index: TaskIndex; parentTaskId?: string } | undefined {
+        if (parentTaskId) {
+            const nestedIndex = this.readIndex(parentTaskId);
+            const nestedEntry = this.findEntry(nestedIndex, id);
+            if (nestedEntry) {
+                return { entry: nestedEntry, index: nestedIndex, parentTaskId };
+            }
+            return undefined;
+        }
+
         const rootIndex = this.readIndex();
         const rootEntry = this.findEntry(rootIndex, id);
         if (rootEntry) {
             return { entry: rootEntry, index: rootIndex };
         }
+        return undefined;
+    }
 
-        // 2. Check all project sub-indices
-        const projects = rootIndex.tasks.filter(t => t.type === 'project');
-        for (const project of projects) {
-            const nestedIndex = this.readIndex(project.id);
-            const nestedEntry = this.findEntry(nestedIndex, id);
-            if (nestedEntry) {
-                return { entry: nestedEntry, index: nestedIndex, parentTaskId: project.id };
+    /**
+     * Recursively searches for an entry in all project indices.
+     * Used internally for parent validation where the exact parent location might not be known.
+     */
+    private findEntryRecursive(id: string, currentParentId?: string): { entry: TaskEntry; index: TaskIndex; parentTaskId?: string } | undefined {
+        const index = this.readIndex(currentParentId);
+        const entry = this.findEntry(index, id);
+        if (entry) {
+            return { entry, index, parentTaskId: currentParentId };
+        }
+
+        for (const task of index.tasks) {
+            if (task.type === 'project') {
+                const found = this.findEntryRecursive(id, task.id);
+                if (found) return found;
             }
         }
         return undefined;
@@ -135,11 +148,12 @@ export class TaskManager {
      * @param parentTaskId - Optional ID of the parent task.
      * @throws {Error} If a task with `id` already exists or parent is invalid.
      */
-    createTask(id: string, type: 'task' | 'project' = 'task', parentTaskId?: string): TaskEntry {
+    createTask(id: string, type: TaskType = 'task', parentTaskId?: string): TaskEntry {
         if (parentTaskId) {
-            // Verify parent task exists in the root index and is of type 'project'
-            const rootIndex = this.readIndex();
-            const parentEntry = this.findEntry(rootIndex, parentTaskId);
+            // Verify parent task exists and is of type 'project'
+            // We search recursively because the creator might not know the grandparent
+            const result = this.findEntryRecursive(parentTaskId);
+            const parentEntry = result?.entry;
             if (!parentEntry) {
                 throw new Error(`Parent task '${parentTaskId}' not found.`);
             }
@@ -208,12 +222,13 @@ export class TaskManager {
     }
 
     /**
-     * Checks if a task with the given `id` exists anywhere in the workspace.
+     * Checks if a task with the given `id` exists in the specified parent project or root.
      * 
      * @param id - The ID of the task to check.
+     * @param parentTaskId - Optional ID of the parent project.
      */
-    taskExists(id: string): boolean {
-        return this.findEntryGlobally(id) !== undefined;
+    taskExists(id: string, parentTaskId?: string): boolean {
+        return this.findEntryGlobally(id, parentTaskId) !== undefined;
     }
 
     /**
@@ -223,10 +238,13 @@ export class TaskManager {
      * @throws {Error} If the task is not found or is already a project.
      */
     promoteTaskToProject(taskId: string): TaskEntry {
-        const index = this.readIndex();
-        const entry = this.findEntry(index, taskId);
-        if (!entry) {
+        const result = this.findEntryRecursive(taskId);
+        if (!result) {
             throw new Error(`Task '${taskId}' not found.`);
+        }
+        const { entry, index, parentTaskId } = result;
+        if (parentTaskId) {
+            throw new Error(`Cannot promote task '${taskId}' to project: it is a subtask of '${parentTaskId}'. Promotion is only supported for top-level tasks.`);
         }
         if (entry.type === 'project') {
             throw new Error(`Task '${taskId}' is already a project.`);
@@ -249,37 +267,68 @@ export class TaskManager {
             this.writeIndex(subIndex, taskId);
         }
 
-        this.writeIndex(index);
+        this.writeIndex(index, parentTaskId);
         this.emitter.emit('didUpdateTask', { taskId: taskId, event: TaskEventType.Updated });
         return entry;
     }
 
-    /**
-     * Returns the currently active task entry, or `null` if none is active.
-     */
     getActiveTask(): TaskEntry | null {
-        const rootIndex = this.readIndex();
-        if (!rootIndex.activeTaskId) {
-            return null;
+        let currentParentId: string | undefined = undefined;
+        let currentActiveId = this.readIndex().activeTaskId;
+
+        if (!currentActiveId) return null;
+
+        let lastFoundEntry: TaskEntry | undefined = undefined;
+
+        while (currentActiveId) {
+            const result = this.findEntryGlobally(currentActiveId, currentParentId);
+            if (!result) break;
+
+            lastFoundEntry = result.entry;
+            if (lastFoundEntry.type === 'project') {
+                const projectIndex = this.readIndex(lastFoundEntry.id);
+                if (projectIndex.activeTaskId) {
+                    currentParentId = lastFoundEntry.id;
+                    currentActiveId = projectIndex.activeTaskId;
+                } else {
+                    break;
+                }
+            } else {
+                break;
+            }
         }
-        const result = this.findEntryGlobally(rootIndex.activeTaskId);
-        return result?.entry ?? null;
+
+        return lastFoundEntry ?? null;
     }
 
     /**
      * Sets `id` as the active task.
      *
      * @param id - ID of the task to activate.
+     * @param parentTaskId - Optional ID of the parent project.
+     * @param activateProject - Whether to also activate the parent project in the root index.
      * @throws {Error} If no task with `id` exists.
      */
-    activateTask(id: string): void {
-        const result = this.findEntryGlobally(id);
+    activateTask(id: string, parentTaskId?: string, activateProject: boolean = true): void {
+        const result = this.findEntryGlobally(id, parentTaskId);
         if (!result) {
-            throw new Error(`Cannot activate task '${id}': task not found.`);
+            throw new Error(`Cannot activate task '${id}': task not found${parentTaskId ? ` in project '${parentTaskId}'` : ''}.`);
         }
-        const rootIndex = this.readIndex();
-        rootIndex.activeTaskId = id;
-        this.writeIndex(rootIndex);
+
+        // 1. Update the index where the task is located
+        const targetIndex = result.index;
+        targetIndex.activeTaskId = id;
+        this.writeIndex(targetIndex, result.parentTaskId);
+
+        // 2. Conditionally activate the parent project in the root index
+        if (result.parentTaskId && activateProject) {
+            const rootIndex = this.readIndex();
+            if (this.findEntry(rootIndex, result.parentTaskId)) {
+                rootIndex.activeTaskId = result.parentTaskId;
+                this.writeIndex(rootIndex);
+            }
+        }
+
         this.emitter.emit('didUpdateTask', { taskId: id, event: TaskEventType.Activated });
     }
 
@@ -297,14 +346,15 @@ export class TaskManager {
      * Transitions a task from `open` → `in-progress`.
      *
      * @param id - ID of the task to start.
+     * @param parentTaskId - Optional ID of the parent project.
      * @throws {Error} If the task is not found or not in `open` status.
      */
-    start_task(id: string): TaskEntry {
-        const result = this.findEntryGlobally(id);
+    start_task(id: string, parentTaskId?: string): TaskEntry {
+        const result = this.findEntryGlobally(id, parentTaskId);
         if (!result) {
-            throw new Error(`Task '${id}' not found.`);
+            throw new Error(`Task '${id}' not found${parentTaskId ? ` in project '${parentTaskId}'` : ''}.`);
         }
-        const { entry, index, parentTaskId } = result;
+        const { entry, index, parentTaskId: resolvedParentId } = result;
         if (entry.status !== TaskStatus.Open) {
             throw new Error(
                 `Cannot start task '${id}': current status is '${entry.status}', expected 'open'.`
@@ -312,7 +362,7 @@ export class TaskManager {
         }
         entry.status = TaskStatus.InProgress;
         entry.updatedAt = Date.now();
-        this.writeIndex(index, parentTaskId);
+        this.writeIndex(index, resolvedParentId);
         this.emitter.emit('didUpdateTask', { taskId: id, event: TaskEventType.StatusChanged });
         return entry;
     }
@@ -321,14 +371,15 @@ export class TaskManager {
      * Transitions a task from `in-progress` → `closed`.
      *
      * @param id - ID of the task to close.
+     * @param parentTaskId - Optional ID of the parent project.
      * @throws {Error} If the task is not found or not in `in-progress` status.
      */
-    close_task(id: string): TaskEntry {
-        const result = this.findEntryGlobally(id);
+    close_task(id: string, parentTaskId?: string): TaskEntry {
+        const result = this.findEntryGlobally(id, parentTaskId);
         if (!result) {
-            throw new Error(`Task '${id}' not found.`);
+            throw new Error(`Task '${id}' not found${parentTaskId ? ` in project '${parentTaskId}'` : ''}.`);
         }
-        const { entry, index, parentTaskId } = result;
+        const { entry, index, parentTaskId: resolvedParentId } = result;
         if (entry.status !== TaskStatus.InProgress) {
             throw new Error(
                 `Cannot close task '${id}': current status is '${entry.status}', expected 'in-progress'. Use 'start_task' first.`
@@ -336,7 +387,7 @@ export class TaskManager {
         }
         entry.status = TaskStatus.Closed;
         entry.updatedAt = Date.now();
-        this.writeIndex(index, parentTaskId);
+        this.writeIndex(index, resolvedParentId);
         this.emitter.emit('didUpdateTask', { taskId: id, event: TaskEventType.StatusChanged });
         return entry;
     }

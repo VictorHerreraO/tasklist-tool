@@ -61,9 +61,9 @@ suite('Artifact Tool Handlers', () => {
     setup(() => {
         workspaceRoot = makeTmpWorkspace();
         taskManager = new TaskManager(workspaceRoot);
-        // Pass workspaceRoot for extensionRoot — built-in templates are still
-        // loaded via the core module's own __dirname regardless of this arg.
-        registry = new ArtifactRegistry(workspaceRoot, workspaceRoot);
+        // Correctly point extensionRoot to the core package root so initialize() can find templates.
+        const coreRoot = path.resolve(path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..', 'core'));
+        registry = new ArtifactRegistry(coreRoot, workspaceRoot);
         registry.initialize();
         artifactService = new ArtifactService(workspaceRoot, taskManager, registry);
         // Pre-create the standard test task.

@@ -1,79 +1,47 @@
-# Tasklist Tool – Hierarchical Task Management – APM Memory Root
+# Tighten Subtask API - APM Memory Root
 **Memory Strategy:** Dynamic-MD
-**Project Overview:** This project introduces a two-level hierarchy (Projects and Subtasks) to the Tasklist Tool. Following the core implementation, the system is being migrated to utilize VS Code Language Model (LM) Tools for the "Promote to Project" feature, enhancing agentic consistency and integration.
+**Project Overview:** This project standardizes subtask access by requiring `parentTaskId` and implementing a cascading activation model across the Core, MCP, and VS Code extension layers. Includes improved error messaging for AI agents and Active Path highlighting in the UI.
 
-## Phase 01 – Test Infrastructure & Baseline Summary
-* Successfully established a standalone Mocha/Chai test environment in `packages/core` to enable independent logic verification.
-* Relocated and ESM-refactored 54 tests for `TaskManager` and `ArtifactService` from the extension package, ensuring high reliability for core services.
-* Resolved critical ESM compatibility issues (e.g., `__dirname` shim) and restored missing template resources to the source directory.
-* Involved Agents: Agent_QA, Agent_Core
+## Phase 1 – Core Logic Updates Summary
+* Successfully updated `TaskManager` and `ArtifactService` to enforce strict hierarchical scoping.
+* Implemented recursive task resolution in `getActiveTask`.
+* Fixed cascading activation logic in `activateTask` and added deep hierarchy support via `findEntryRecursive`.
+* Achieved 100% test coverage with 115 passing tests.
+* Involved Agents: Agent_Core, Agent_QA
 * Logs:
-  - [Task 1.1 - Core Test Environment Setup](file:///Users/victor.herrera/Workspace/tasklist-tool/.apm/Memory/Phase_01_Test_Infrastructure_Baseline/Task_1_1_Core_Test_Environment_Setup.md)
-  - [Task 1.2 - Relocate TaskManager Tests](file:///Users/victor.herrera/Workspace/tasklist-tool/.apm/Memory/Phase_01_Test_Infrastructure_Baseline/Task_1_2_Relocate_TaskManager_Tests.md)
-  - [Task 1.3 - Relocate ArtifactService Tests](file:///Users/victor.herrera/Workspace/tasklist-tool/.apm/Memory/Phase_01_Test_Infrastructure_Baseline/Task_1_3_Relocate_ArtifactService_Tests.md)
+  - [Task 1.1 - Core TaskManager Updates](.apm/Memory/Phase_01_Core_Logic_Updates/Task_1_1_Core_TaskManager_Updates.md)
+  - [Task 1.3 - Complete TaskManager API Tightening](.apm/Memory/Phase_01_Core_Logic_Updates/Task_1_3_Complete_TaskManager_API_Tightening.md)
+  - [Task 1.2 - Core Hierarchy Unit Tests](.apm/Memory/Phase_01_Core_Logic_Updates/Task_1_2_Core_Hierarchy_Unit_Tests.md)
 
-
----
-## Phase 02 – Foundation (Models & Manager) Summary
-* Successfully introduced `type` ('task' | 'project') and `parentTaskId` fields to core task models.
-* Enhanced `TaskManager` with a migration layer for legacy tasks and hierarchical filtering in `listTasks`, ensuring top-level visibility by default.
-* Maintained 100% test parity with 62 passing core tests.
-* Involved Agents: Agent_Core
-* Logs:
-  - [Task 2.1 - Update Task Models](file:///Users/victor.herrera/Workspace/tasklist-tool/.apm/Memory/Phase_02_Foundation_Models_Manager/Task_2_1_Update_Task_Models.md)
-  - [Task 2.2 - TaskManager Core Update](file:///Users/victor.herrera/Workspace/tasklist-tool/.apm/Memory/Phase_02_Foundation_Models_Manager/Task_2_2_TaskManager_Core_Update.md)
-
-
----
-## Phase 03 – Logic (Promotion & Nested Resolution) Summary
-* Implemented `promoteTaskToProject` logic, allowing tasks to become containers with their own nested `index.json`.
-* Enabled subtask management in `TaskManager`, including global task resolution across multiple indices for all state transition methods.
-* Updated `ArtifactService` with hierarchical path resolution, nesting subtask artifacts within their parent project directories.
-* Involved Agents: Agent_Core
-* Logs:
-  - [Task 3.1 - Implement Task Promotion Logic](file:///Users/victor.herrera/Workspace/tasklist-tool/.apm/Memory/Phase_03_Logic_Promotion_Nested_Resolution/Task_3_1_Implement_Task_Promotion_Logic.md)
-  - [Task 3.2 - Nested Index Management](file:///Users/victor.herrera/Workspace/tasklist-tool/.apm/Memory/Phase_03_Logic_Promotion_Nested_Resolution/Task_3_2_Nested_Index_Management.md)
-  - [Task 3.3 - Artifact Path Resolution Update](file:///Users/victor.herrera/Workspace/tasklist-tool/.apm/Memory/Phase_03_Logic_Promotion_Nested_Resolution/Task_3_3_Artifact_Path_Resolution_Update.md)
-
-
----
-## Phase 04 – Integration (MCP Tools & Testing) Summary
-* Successfully exposed hierarchical task management (projects, subtasks, promotion) via the MCP server with updated tool schemas and handlers in `packages/mcp`.
-* Rebuilt `@tasklist/core` and `@tasklist/mcp` to ensure cross-package type synchronization.
+## Phase 2 – MCP Layer Updates Summary
+* Migrated hierarchical scoping capabilities to the MCP server.
+* Updated Zod schemas and tool handlers for `activate_task`, `start_task`, and `close_task`.
+* Created comprehensive documentation in `packages/mcp/README.md` with explicit guidance and examples for AI agents.
 * Involved Agents: Agent_MCP
 * Logs:
-  - [Task 4.1 - MCP Tool Definition Update](file:///Users/victor.herrera/Workspace/tasklist-tool/.apm/Memory/Phase_04_Integration_MCP_Testing/Task_4_1_MCP_Tool_Definition_Update.md)
-  - [Task 4.2 - Hierarchical Verification Suite](file:///Users/victor.herrera/Workspace/tasklist-tool/.apm/Memory/Phase_04_Integration_MCP_Testing/Task_4_2_Hierarchical_Verification_Suite.md)
-  - [Task 4.3 - Documentation Update](file:///Users/victor.herrera/Workspace/tasklist-tool/.apm/Memory/Phase_04_Integration_MCP_Testing/Task_4_3_Documentation_Update.md)
+  - [Task 2.1 - Update MCP Tool Schemas](.apm/Memory/Phase_02_Foundation_Models_Manager/Task_2_1_Update_MCP_Tool_Schemas.md)
+  - [Task 2.3 - Update MCP Documentation & Examples](.apm/Memory/Phase_02_Foundation_Models_Manager/Task_2_3_Update_MCP_Documentation_Examples.md)
 
----
-## Phase 05 – VS Code Extension Integration Summary
-* Successfully updated the VS Code Tree View to render hierarchical tasks (Projects and Subtasks) with distinct icons and collapsible states.
-* Registered the `TaskTreeProvider` in the extension entry point.
+## Phase 3 – VS Code Extension Updates Summary
+* Updated VS Code extension LM tool schemas and implementations to support hierarchical scoping and project activation.
+* Enhanced error messages with recovery guidance.
+* Updated sidebar context menu commands (`startTask`, `closeTask`, `openTaskDetails`) to correctly extract and pass `parentTaskId`.
+* Implemented "Active Path" highlighting in `TaskTreeProvider.ts` to dynamically show both active subtasks and parent projects recursively.
 * Involved Agents: Agent_Extension
 * Logs:
-  - [Task 5.1 - Update Extension Tree Provider](file:///Users/victor.herrera/Workspace/tasklist-tool/.apm/Memory/Phase_05_VS_Code_Extension_Integration/Task_5_1_Update_Extension_Tree_Provider.md)
-  - [Task 5.2 - Implement "Promote to Project" Command](file:///Users/victor.herrera/Workspace/tasklist-tool/.apm/Memory/Phase_05_VS_Code_Extension_Integration/Task_5_2_Implement_Promote_to_Project_Command.md)
----
-## Phase 06 – Language Model Tool Migration Summary
-* Successfully migrated the "Promote to Project" feature from a manual VS Code command to a Language Model (LM) Tool.
-* Implemented the `PromoteToProjectTool` logic with robust error handling and user confirmation flows.
-* Integrated comprehensive unit tests for the new LM tool into the extension's test suite.
-* Identified consistency gaps in `create_task` and `list_tasks` LM tools regarding `parentTaskId` support.
-* Involved Agents: Agent_Extension, Agent_QA
-* Logs:
-  - [Task 6.1 - Define promote_to_project in package.json](file:///Users/victor.herrera/Workspace/tasklist-tool/.apm/Memory/Phase_06_LM_Tool_Migration/Task_6_1_Define_promote_to_project_in_package_json.md)
-  - [Task 6.2 - Implement PromoteToProjectTool](file:///Users/victor.herrera/Workspace/tasklist-tool/.apm/Memory/Phase_06_LM_Tool_Migration/Task_6_2_Implement_PromoteToProjectTool.md)
-  - [Task 6.3 - Wiring and Cleanup in extension](file:///Users/victor.herrera/Workspace/tasklist-tool/.apm/Memory/Phase_06_LM_Tool_Migration/Task_6_3_Wiring_and_Cleanup_in_extension.md)
-  - [Task 6.4 - Update Hierarchical Verification Suite](file:///Users/victor.herrera/Workspace/tasklist-tool/.apm/Memory/Phase_06_LM_Tool_Migration/Task_6_4_Update_Hierarchical_Verification_Suite.md)
+  - [Task 3.1 - Synchronize Extension LM Tools](.apm/Memory/Phase_03_VS_Code_Extension_Updates/Task_3_1_Synchronize_Extension_LM_Tools.md)
+  - [Task 3.2 - Update Extension Sidebar Commands & UI](.apm/Memory/Phase_03_VS_Code_Extension_Updates/Task_3_2_Update_Extension_Sidebar_Commands_UI.md)
 
----
-## Phase 07 – Hierarchical Tool Parity Summary
-* Achieved full hierarchical functional parity for the extension's Language Model (LM) tools.
-* Updated `create_task` and `list_tasks` schemas and logic to support `type` and `parentTaskId` parameters.
-* Verified the end-to-end multi-tier workflow, including subtask creation and project-based filtering via LM Tool interaction.
-* Involved Agents: Agent_Extension, Agent_QA
+## Phase 4 – Final Verification Summary
+* Executed all tests for `@tasklist/core` (115 passing) and `@tasklist/mcp` (68 passing).
+* Addressed UI bugs during verification: fixed tree collapse during task switching and missing 'Activate Task' command in sidebar.
+* Updated MCP artifact tools (`artifact_list`, `artifact_get`) to support strict scoping with `parentTaskId`.
+* Completed Ad-Hoc manual UI verification with the User to confirm active path highlighting and expansion persistence.
+* Generated official tasklist artifacts for `tighten-subtask-api` and `tsa-verification`.
+* Involved Agents: Agent_QA, User (Ad-Hoc Manual UI Testing)
 * Logs:
-  - [Task 7.1 - Update create_task & list_tasks Schemas](file:///Users/victor.herrera/Workspace/tasklist-tool/.apm/Memory/Phase_07_Hierarchical_Tool_Parity/Task_7_1_Update_create_task_list_tasks_Schemas.md)
-  - [Task 7.2 - Implement Hierarchical Logic in LM Tools](file:///Users/victor.herrera/Workspace/tasklist-tool/.apm/Memory/Phase_07_Hierarchical_Tool_Parity/Task_7_2_Implement_Hierarchical_Logic_in_LM_Tools.md)
-  - [Task 7.3 - Final Hierarchy Verification](file:///Users/victor.herrera/Workspace/tasklist-tool/.apm/Memory/Phase_07_Hierarchical_Tool_Parity/Task_7_3_Final_Hierarchy_Verification.md)
+  - [Task 4.1 - Final System Verification & UI Walkthrough](.apm/Memory/Phase_04_Final_Verification/Task_4_1_Final_System_Verification_UI_Walkthrough.md)
+  
+**Project Status:** ✅ Completed.
+
+

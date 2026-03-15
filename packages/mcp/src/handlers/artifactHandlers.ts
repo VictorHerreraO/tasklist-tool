@@ -29,14 +29,15 @@ function successResult(message: string): McpToolResult {
 // ─── Task ID resolution ───────────────────────────────────────────────────────
 
 /** Discriminated union used to return either a resolved ID or an error result. */
-type ResolvedId = { ok: true; id: string } | { ok: false; result: McpToolResult };
+type ResolvedTask = { ok: true; id: string; parentTaskId?: string } | { ok: false; result: McpToolResult };
 
 function resolveTaskId(
     manager: TaskManager,
-    taskId: string | undefined
-): ResolvedId {
+    taskId: string | undefined,
+    parentTaskId?: string
+): ResolvedTask {
     if (taskId) {
-        return { ok: true, id: taskId };
+        return { ok: true, id: taskId, parentTaskId };
     }
     const active = manager.getActiveTask();
     if (!active) {
@@ -48,7 +49,7 @@ function resolveTaskId(
             ),
         };
     }
-    return { ok: true, id: active.id };
+    return { ok: true, id: active.id, parentTaskId: active.parentTaskId };
 }
 
 // ─── list_artifacts ──────────────────────────────────────────────────────────
@@ -56,14 +57,14 @@ function resolveTaskId(
 export async function handleListArtifacts(
     manager: TaskManager,
     service: ArtifactService,
-    input: { taskId?: string }
+    input: { taskId?: string; parentTaskId?: string }
 ): Promise<McpToolResult> {
-    const resolved = resolveTaskId(manager, input.taskId);
+    const resolved = resolveTaskId(manager, input.taskId, input.parentTaskId);
     if (!resolved.ok) { return resolved.result; }
-    const resolvedId = resolved.id;
+    const { id: resolvedId, parentTaskId } = resolved;
 
     try {
-        const infos = service.listArtifacts(resolvedId);
+        const infos = service.listArtifacts(resolvedId, parentTaskId);
 
         const lines = infos.map(
             info =>
@@ -78,7 +79,7 @@ export async function handleListArtifacts(
         const message = toErrorMessage(err);
         if (message.includes('not found')) {
             return errorResult(
-                `Task '${resolvedId}' not found. ` +
+                `Task '${resolvedId}' not found${parentTaskId ? ` in project '${parentTaskId}'` : ''}. ` +
                 `Use 'list_tasks' to see available tasks, then retry with a valid taskId.`
             );
         }
@@ -94,15 +95,15 @@ export async function handleListArtifacts(
 export async function handleGetArtifact(
     manager: TaskManager,
     service: ArtifactService,
-    input: { artifactType: string; taskId?: string }
+    input: { artifactType: string; taskId?: string; parentTaskId?: string }
 ): Promise<McpToolResult> {
-    const resolved = resolveTaskId(manager, input.taskId);
+    const resolved = resolveTaskId(manager, input.taskId, input.parentTaskId);
     if (!resolved.ok) { return resolved.result; }
-    const resolvedId = resolved.id;
+    const { id: resolvedId, parentTaskId } = resolved;
     const { artifactType } = input;
 
     try {
-        const content = service.getArtifact(resolvedId, artifactType);
+        const content = service.getArtifact(resolvedId, artifactType, parentTaskId);
 
         const header =
             `[Artifact: ${artifactType} | Task: ${resolvedId}]\n` +
@@ -130,15 +131,15 @@ export async function handleGetArtifact(
 export async function handleUpdateArtifact(
     manager: TaskManager,
     service: ArtifactService,
-    input: { artifactType: string; content: string; taskId?: string }
+    input: { artifactType: string; content: string; taskId?: string; parentTaskId?: string }
 ): Promise<McpToolResult> {
-    const resolved = resolveTaskId(manager, input.taskId);
+    const resolved = resolveTaskId(manager, input.taskId, input.parentTaskId);
     if (!resolved.ok) { return resolved.result; }
-    const resolvedId = resolved.id;
+    const { id: resolvedId, parentTaskId } = resolved;
     const { artifactType, content } = input;
 
     try {
-        service.updateArtifact(resolvedId, artifactType, content);
+        service.updateArtifact(resolvedId, artifactType, content, parentTaskId);
         return successResult(
             `Artifact '${artifactType}' for task '${resolvedId}' has been saved successfully.`
         );
@@ -146,7 +147,7 @@ export async function handleUpdateArtifact(
         const message = toErrorMessage(err);
         if (message.includes('not found')) {
             return errorResult(
-                `Cannot update artifact: task '${resolvedId}' not found. ` +
+                `Cannot update artifact: task '${resolvedId}' not found${parentTaskId ? ` in project '${parentTaskId}'` : ''}. ` +
                 `Use 'list_tasks' to find valid task IDs or 'create_task' to create a new one.`
             );
         }

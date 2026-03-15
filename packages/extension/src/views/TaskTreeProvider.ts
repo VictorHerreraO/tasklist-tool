@@ -5,6 +5,7 @@ import { TaskManager, TaskEntry, TaskStatus } from '@tasklist/core';
  * Provides a tree view of hierarchical tasks (Projects and Subtasks).
  */
 export class TaskTreeProvider implements vscode.TreeDataProvider<TaskTreeItem> {
+    private expandedTaskIds: Set<string> = new Set();
     private _onDidChangeTreeData: vscode.EventEmitter<TaskTreeItem | undefined | null | void> =
         new vscode.EventEmitter<TaskTreeItem | undefined | null | void>();
     readonly onDidChangeTreeData: vscode.Event<TaskTreeItem | undefined | null | void> =
@@ -18,6 +19,17 @@ export class TaskTreeProvider implements vscode.TreeDataProvider<TaskTreeItem> {
     setTaskManager(taskManager: TaskManager | undefined): void {
         this.taskManager = taskManager;
         this.refresh();
+    }
+
+    /**
+     * Records the expansion state of a specific item.
+     */
+    setExpanded(taskId: string, expanded: boolean): void {
+        if (expanded) {
+            this.expandedTaskIds.add(taskId);
+        } else {
+            this.expandedTaskIds.delete(taskId);
+        }
     }
 
     /**
@@ -50,7 +62,49 @@ export class TaskTreeProvider implements vscode.TreeDataProvider<TaskTreeItem> {
         // Apply folder-like sorting
         this.sortTasks(tasks);
 
-        return tasks.map(task => new TaskTreeItem(task, task.id === activeTask?.id));
+        return tasks.map(task => {
+            const isActive = this.isPathActive(task, activeTask);
+
+            // Ensure active path projects are recorded as expanded so they persist
+            // even if the active task changes later.
+            if (isActive && task.type === 'project') {
+                this.expandedTaskIds.add(task.id);
+            }
+
+            const isManualExpanded = this.expandedTaskIds.has(task.id);
+            const state = task.type === 'project'
+                ? (isActive || isManualExpanded ? vscode.TreeItemCollapsibleState.Expanded : vscode.TreeItemCollapsibleState.Collapsed)
+                : vscode.TreeItemCollapsibleState.None;
+
+            return new TaskTreeItem(task, isActive, state);
+        });
+    }
+
+    /**
+     * Checks if a task is part of the active path (meaning it is either the active task itself, 
+     * or a parent project of the active task).
+     */
+    private isPathActive(task: TaskEntry, activeTask: TaskEntry | null): boolean {
+        if (!activeTask) {
+            return false;
+        }
+        if (task.id === activeTask.id) {
+            return true;
+        }
+
+        // Walk up from the activeTask to see if 'task' is an ancestor
+        let currentId = activeTask.parentTaskId;
+        while (currentId) {
+            if (task.id === currentId) {
+                return true;
+            }
+            if (!this.taskManager) {
+                break;
+            }
+            const parentResult = this.taskManager.findEntryGlobally(currentId);
+            currentId = parentResult?.entry?.parentTaskId;
+        }
+        return false;
     }
 
     /**
@@ -84,7 +138,19 @@ export class TaskTreeProvider implements vscode.TreeDataProvider<TaskTreeItem> {
         const result = this.taskManager.findEntryGlobally(parentId);
         if (result) {
             const activeTask = this.taskManager.getActiveTask();
-            return new TaskTreeItem(result.entry, result.entry.id === activeTask?.id);
+            const isActive = this.isPathActive(result.entry, activeTask);
+
+            // Ensure active path projects are recorded as expanded
+            if (isActive && result.entry.type === 'project') {
+                this.expandedTaskIds.add(result.entry.id);
+            }
+
+            const isManualExpanded = this.expandedTaskIds.has(result.entry.id);
+            const state = result.entry.type === 'project'
+                ? (isActive || isManualExpanded ? vscode.TreeItemCollapsibleState.Expanded : vscode.TreeItemCollapsibleState.Collapsed)
+                : vscode.TreeItemCollapsibleState.None;
+
+            return new TaskTreeItem(result.entry, isActive, state);
         }
         return undefined;
     }
@@ -101,7 +167,19 @@ export class TaskTreeProvider implements vscode.TreeDataProvider<TaskTreeItem> {
         const result = this.taskManager.findEntryGlobally(taskId);
         if (result) {
             const activeTask = this.taskManager.getActiveTask();
-            return new TaskTreeItem(result.entry, result.entry.id === activeTask?.id);
+            const isActive = this.isPathActive(result.entry, activeTask);
+
+            // Ensure active path projects are recorded as expanded
+            if (isActive && result.entry.type === 'project') {
+                this.expandedTaskIds.add(result.entry.id);
+            }
+
+            const isManualExpanded = this.expandedTaskIds.has(result.entry.id);
+            const state = result.entry.type === 'project'
+                ? (isActive || isManualExpanded ? vscode.TreeItemCollapsibleState.Expanded : vscode.TreeItemCollapsibleState.Collapsed)
+                : vscode.TreeItemCollapsibleState.None;
+
+            return new TaskTreeItem(result.entry, isActive, state);
         }
         return undefined;
     }
@@ -113,13 +191,9 @@ export class TaskTreeProvider implements vscode.TreeDataProvider<TaskTreeItem> {
 export class TaskTreeItem extends vscode.TreeItem {
     constructor(
         public readonly task: TaskEntry,
-        public readonly isActive: boolean = false
+        public readonly isActive: boolean = false,
+        collapsibleState: vscode.TreeItemCollapsibleState = vscode.TreeItemCollapsibleState.None
     ) {
-        // Projects are expandable, tasks are leaves
-        const collapsibleState = task.type === 'project'
-            ? vscode.TreeItemCollapsibleState.Collapsed
-            : vscode.TreeItemCollapsibleState.None;
-
         super(task.id, collapsibleState);
 
         // Update label and description for active tasks
@@ -130,19 +204,19 @@ export class TaskTreeItem extends vscode.TreeItem {
             this.description = this.task.status;
         }
 
-        const createdDate = new Date(this.task.createdAt).toLocaleString();
+        const updatedDate = new Date(this.task.updatedAt).toLocaleString();
 
         // Markdown tooltip for a premium feel
         const tooltip = new vscode.MarkdownString();
         tooltip.appendMarkdown(`### **Task:** ${this.task.id}\n\n`);
-        tooltip.appendMarkdown(`**Status:** ${this.task.status.toUpperCase()}\n\n`);
-        tooltip.appendMarkdown(`**Type:** ${this.task.type.toUpperCase()}\n\n`);
-        tooltip.appendMarkdown(`**Created:** ${createdDate}\n\n`);
+        tooltip.appendMarkdown(`---\n\n`);
+        tooltip.appendMarkdown(`* **Status:** ${this.task.status.toUpperCase()}\n`);
+        tooltip.appendMarkdown(`* **Updated:** ${updatedDate}\n`);
         tooltip.appendMarkdown(`---\n\n`);
         tooltip.appendMarkdown(`*Click to open details*`);
         this.tooltip = tooltip;
 
-        this.contextValue = `${this.task.type}:${this.task.status}${this.isActive ? ':active' : ''}`;
+        this.contextValue = `${this.task.parentTaskId ? 'subtask' : this.task.type}:${this.task.status}${this.isActive ? ':active' : ''}`;
 
         // Set click command
         this.command = {

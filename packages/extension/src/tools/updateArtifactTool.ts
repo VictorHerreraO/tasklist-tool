@@ -33,15 +33,16 @@ export class UpdateArtifactTool implements vscode.LanguageModelTool<IUpdateArtif
     }
 
     /**
-     * Resolves the effective task ID from explicit input or the active task.
+     * Resolves the effective task context from explicit input or the active task.
      *
      * @param taskId - The optional task ID from the tool input.
-     * @returns The resolved task ID.
+     * @param parentTaskId - The optional parent task ID from the tool input.
+     * @returns The resolved task ID and optional parentTaskId.
      * @throws {Error} If no taskId is supplied and no task is currently active.
      */
-    private resolveTaskId(taskId?: string): string {
+    private resolveTaskContext(taskId?: string, parentTaskId?: string): { taskId: string; parentTaskId?: string } {
         if (taskId) {
-            return taskId;
+            return { taskId, parentTaskId };
         }
         const active = this.taskManager.getActiveTask();
         if (!active) {
@@ -50,7 +51,7 @@ export class UpdateArtifactTool implements vscode.LanguageModelTool<IUpdateArtif
                 'Pass an explicit taskId or activate a task first using `activate_task`.'
             );
         }
-        return active.id;
+        return { taskId: active.id, parentTaskId: active.parentTaskId };
     }
 
     /**
@@ -64,15 +65,16 @@ export class UpdateArtifactTool implements vscode.LanguageModelTool<IUpdateArtif
         options: vscode.LanguageModelToolInvocationPrepareOptions<IUpdateArtifactParams>,
         _token: vscode.CancellationToken
     ): Promise<vscode.PreparedToolInvocation> {
-        const { artifactType, taskId } = options.input;
+        const { artifactType, taskId, parentTaskId } = options.input;
         const taskLabel = taskId ?? 'the active task';
+        const parentLabel = parentTaskId ? ` in project '${parentTaskId}'` : '';
         return {
-            invocationMessage: `Saving '${artifactType}' artifact for ${taskLabel}`,
+            invocationMessage: `Saving '${artifactType}' artifact for ${taskLabel}${parentLabel}`,
             confirmationMessages: {
                 title: 'Update Artifact',
                 message: new vscode.MarkdownString(
                     `Write (create or overwrite) the \`${artifactType}\` artifact ` +
-                    `for task \`${taskLabel}\`. **This will replace any existing file content.**`
+                    `for task \`${taskLabel}\`${parentLabel}. **This will replace any existing file content.**`
                 ),
             },
         };
@@ -92,13 +94,13 @@ export class UpdateArtifactTool implements vscode.LanguageModelTool<IUpdateArtif
         _token: vscode.CancellationToken
     ): Promise<vscode.LanguageModelToolResult> {
         const { artifactType, content } = options.input;
-        const taskId = this.resolveTaskId(options.input.taskId);
+        const { taskId, parentTaskId } = this.resolveTaskContext(options.input.taskId, options.input.parentTaskId);
 
         try {
-            this.artifactService.updateArtifact(taskId, artifactType, content);
+            this.artifactService.updateArtifact(taskId, artifactType, content, parentTaskId);
             return new vscode.LanguageModelToolResult([
                 new vscode.LanguageModelTextPart(
-                    `Artifact '${artifactType}' for task '${taskId}' has been saved successfully.`
+                    `Artifact '${artifactType}' for task '${taskId}'${parentTaskId ? ` in project '${parentTaskId}'` : ''} has been saved successfully.`
                 ),
             ]);
         } catch (err: unknown) {
@@ -107,6 +109,7 @@ export class UpdateArtifactTool implements vscode.LanguageModelTool<IUpdateArtif
             if (message.includes('not found')) {
                 throw new Error(
                     `Cannot update artifact: task '${taskId}' not found. ` +
+                    `AI Agent might have forgot to provide a parent project id. ` +
                     `Use 'list_tasks' to find valid task IDs or 'create_task' to create a new one.`
                 );
             }

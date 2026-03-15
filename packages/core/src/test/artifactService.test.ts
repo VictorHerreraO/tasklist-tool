@@ -241,7 +241,7 @@ describe('ArtifactService', () => {
         });
 
         it('resolves subtask artifacts to nested project directory: .tasks/${projectId}/${subtaskId}/', () => {
-            service.updateArtifact(SUBTASK_ID, 'research', '# Subtask Research');
+            service.updateArtifact(SUBTASK_ID, 'research', '# Subtask Research', PROJECT_ID);
             const expectedPath = path.join(workspaceRoot, '.tasks', PROJECT_ID, SUBTASK_ID, 'research.ai.md');
             assert.ok(fs.existsSync(expectedPath), 'Subtask artifact should be in the nested project directory');
         });
@@ -253,7 +253,7 @@ describe('ArtifactService', () => {
         });
 
         it('listArtifacts returns correct absolute paths for subtasks', () => {
-            const infos = service.listArtifacts(SUBTASK_ID);
+            const infos = service.listArtifacts(SUBTASK_ID, PROJECT_ID);
             const research = infos.find(i => i.type.id === 'research');
             const expectedPath = path.join(workspaceRoot, '.tasks', PROJECT_ID, SUBTASK_ID, 'research.ai.md');
             assert.strictEqual(research?.path, expectedPath);
@@ -261,8 +261,34 @@ describe('ArtifactService', () => {
 
         it('getArtifact retrieves content from nested directory for subtasks', () => {
             const content = '# Nested content';
-            service.updateArtifact(SUBTASK_ID, 'research', content);
-            assert.strictEqual(service.getArtifact(SUBTASK_ID, 'research'), content);
+            service.updateArtifact(SUBTASK_ID, 'research', content, PROJECT_ID);
+            assert.strictEqual(service.getArtifact(SUBTASK_ID, 'research', PROJECT_ID), content);
+        });
+
+        it('supports explicit parentTaskId in listArtifacts', () => {
+            const result = service.listArtifacts(SUBTASK_ID, PROJECT_ID);
+            assert.ok(result.length > 0);
+            const research = result.find(i => i.type.id === 'research');
+            assert.strictEqual(research?.exists, false);
+        });
+
+        it('supports explicit parentTaskId in updateArtifact and getArtifact', () => {
+            const content = '# Explicit Parent Research';
+            service.updateArtifact(SUBTASK_ID, 'research', content, PROJECT_ID);
+
+            const retrieved = service.getArtifact(SUBTASK_ID, 'research', PROJECT_ID);
+            assert.strictEqual(retrieved, content);
+
+            // Verify it was actually written to the nested path
+            const expectedPath = path.join(workspaceRoot, '.tasks', PROJECT_ID, SUBTASK_ID, 'research.ai.md');
+            assert.ok(fs.existsSync(expectedPath));
+        });
+
+        it('throws in updateArtifact if subtask is not found in the specified parent project', () => {
+            assert.throws(
+                () => service.updateArtifact(SUBTASK_ID, 'research', '# content', 'wrong-project'),
+                /Task 'my-subtask' not found in project 'wrong-project'\./
+            );
         });
     });
 });

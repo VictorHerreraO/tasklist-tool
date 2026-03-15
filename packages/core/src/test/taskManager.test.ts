@@ -229,7 +229,7 @@ describe('TaskManager', () => {
             });
 
             it('filters subtasks by status', () => {
-                manager.start_task('sub-1');
+                manager.start_task('sub-1', 'task-a');
                 const result = manager.listTasks(TaskStatus.InProgress, 'task-a');
                 assert.strictEqual(result.length, 1);
                 assert.strictEqual(result[0].id, 'sub-1');
@@ -299,6 +299,15 @@ describe('TaskManager', () => {
                 /Task 'already-p' is already a project\./
             );
         });
+
+        it('throws if task is a subtask', () => {
+            manager.createTask('parent-p', 'project');
+            manager.createTask('sub-t', 'task', 'parent-p');
+            assert.throws(
+                () => manager.promoteTaskToProject('sub-t'),
+                /Cannot promote task 'sub-t' to project: it is a subtask of 'parent-p'/
+            );
+        });
     });
 
     // ── Activation / Deactivation ──────────────────────────────────────────
@@ -336,6 +345,128 @@ describe('TaskManager', () => {
                 () => manager.activateTask('no-such-task'),
                 /Cannot activate task 'no-such-task': task not found\./
             );
+        });
+
+        describe('hierarchical activation and resolution', () => {
+            const PROJECT_ID = 'p1';
+            const SUBTASK_ID = 's1';
+
+            beforeEach(() => {
+                manager.createTask(PROJECT_ID, 'project');
+                manager.createTask(SUBTASK_ID, 'task', PROJECT_ID);
+            });
+
+            it('getActiveTask resolves nested active task recursively', () => {
+                // Activate parent in root index
+                manager.activateTask(PROJECT_ID);
+                // Activate subtask in parent index
+                manager.activateTask(SUBTASK_ID, PROJECT_ID);
+
+                const active = manager.getActiveTask();
+                assert.ok(active);
+                assert.strictEqual(active.id, SUBTASK_ID);
+                assert.strictEqual(active.parentTaskId, PROJECT_ID);
+            });
+
+            it('activateTask cascades activation to parent project by default', () => {
+                manager.deactivateTask();
+                assert.strictEqual(manager.getActiveTask(), null);
+
+                // Activate subtask; should also activate parent in root
+                manager.activateTask(SUBTASK_ID, PROJECT_ID);
+
+                const active = manager.getActiveTask();
+                assert.strictEqual(active?.id, SUBTASK_ID);
+
+                // Verify root index has PROJECT_ID as active
+                const rootIndex = (manager as any).readIndex();
+                assert.strictEqual(rootIndex.activeTaskId, PROJECT_ID);
+            });
+
+            it('activateTask does NOT cascade if activateProject is false', () => {
+                manager.deactivateTask();
+
+                // Activate subtask without cascading
+                manager.activateTask(SUBTASK_ID, PROJECT_ID, false);
+
+                // Root active task should still be null
+                const rootActive = (manager as any).readIndex().activeTaskId;
+                assert.strictEqual(rootActive, null);
+
+                // getActiveTask should return null because root is not active
+                assert.strictEqual(manager.getActiveTask(), null);
+            });
+
+            it('resolves multiple levels of nesting', () => {
+                // Directly create nested project structure
+                manager.createTask('p_lvl1', 'project');
+                manager.createTask('p_lvl2', 'project', 'p_lvl1');
+                manager.createTask('t_lvl3', 'task', 'p_lvl2');
+
+                // Activate chain
+                manager.activateTask('p_lvl1');
+                manager.activateTask('p_lvl2', 'p_lvl1');
+                manager.activateTask('t_lvl3', 'p_lvl2');
+
+                const active = manager.getActiveTask();
+                assert.ok(active);
+                assert.strictEqual(active.id, 't_lvl3');
+            });
+        });
+    });
+
+    describe('strict hierarchical scoping', () => {
+        const PROJECT_ID = 'p1';
+        const SUBTASK_ID = 's1';
+
+        beforeEach(() => {
+            manager.createTask(PROJECT_ID, 'project');
+            manager.createTask(SUBTASK_ID, 'task', PROJECT_ID);
+        });
+
+        it('findEntryGlobally does NOT find subtask without parentTaskId', () => {
+            const result = manager.findEntryGlobally(SUBTASK_ID);
+            assert.strictEqual(result, undefined);
+        });
+
+        it('findEntryGlobally finds subtask WITH parentTaskId', () => {
+            const result = manager.findEntryGlobally(SUBTASK_ID, PROJECT_ID);
+            assert.ok(result);
+            assert.strictEqual(result.entry.id, SUBTASK_ID);
+        });
+
+        it('taskExists returns false for subtask without parentTaskId', () => {
+            assert.strictEqual(manager.taskExists(SUBTASK_ID), false);
+        });
+
+        it('taskExists returns true for subtask WITH parentTaskId', () => {
+            assert.strictEqual(manager.taskExists(SUBTASK_ID, PROJECT_ID), true);
+        });
+
+        it('start_task throws for subtask without parentTaskId', () => {
+            assert.throws(
+                () => manager.start_task(SUBTASK_ID),
+                new RegExp(`Task '${SUBTASK_ID}' not found\\.`)
+            );
+        });
+
+        it('start_task works for subtask WITH parentTaskId', () => {
+            const entry = manager.start_task(SUBTASK_ID, PROJECT_ID);
+            assert.strictEqual(entry.status, TaskStatus.InProgress);
+        });
+
+        it('close_task throws for subtask without parentTaskId', () => {
+            manager.start_task(SUBTASK_ID, PROJECT_ID);
+            assert.throws(
+                () => manager.close_task(SUBTASK_ID),
+                new RegExp(`Task '${SUBTASK_ID}' not found\\.`)
+            );
+        });
+
+        it('close_task works for subtask WITH parentTaskId', () => {
+            manager.start_task(SUBTASK_ID, PROJECT_ID);
+            const entry = manager.close_task(SUBTASK_ID, PROJECT_ID);
+            assert.strictEqual(entry.status, TaskStatus.Closed);
         });
     });
 

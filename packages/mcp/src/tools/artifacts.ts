@@ -34,8 +34,12 @@ server.tool(
             .string()
             .optional()
             .describe('ID of the task whose artifacts to list. Defaults to the active task.'),
+        parentTaskId: z
+            .string()
+            .optional()
+            .describe('Optional ID of the parent project. Required for subtasks.'),
     },
-    ({ taskId }) => handleListArtifacts(taskManager, artifactService, { taskId })
+    ({ taskId, parentTaskId }) => handleListArtifacts(taskManager, artifactService, { taskId, parentTaskId })
 );
 
 server.tool(
@@ -54,8 +58,12 @@ server.tool(
             .string()
             .optional()
             .describe('ID of the task the artifact belongs to. Defaults to the active task.'),
+        parentTaskId: z
+            .string()
+            .optional()
+            .describe('Optional ID of the parent project. Required for subtasks.'),
     },
-    ({ artifactType, taskId }) => handleGetArtifact(taskManager, artifactService, { artifactType, taskId })
+    ({ artifactType, taskId, parentTaskId }) => handleGetArtifact(taskManager, artifactService, { artifactType, taskId, parentTaskId })
 );
 
 server.tool(
@@ -76,8 +84,12 @@ server.tool(
             .string()
             .optional()
             .describe('ID of the task the artifact belongs to. Defaults to the active task.'),
+        parentTaskId: z
+            .string()
+            .optional()
+            .describe('Optional ID of the parent project. Required for subtasks.'),
     },
-    ({ artifactType, content, taskId }) => handleUpdateArtifact(taskManager, artifactService, { artifactType, content, taskId })
+    ({ artifactType, content, taskId, parentTaskId }) => handleUpdateArtifact(taskManager, artifactService, { artifactType, content, taskId, parentTaskId })
 );
 
 server.tool(

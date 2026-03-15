@@ -2,7 +2,7 @@
   "name": "tasklist-tool",
   "displayName": "Tasklist Tool",
   "description": "A VS Code extension for structured task and artifact management for AI agents.",
-  "version": "0.3.4",
+  "version": "0.3.5",
   "publisher": "local",
   "repository": {
     "type": "git",
@@ -82,7 +82,7 @@
         "name": "activate_task",
         "toolReferenceName": "activate_task",
         "displayName": "Activate Task",
-        "modelDescription": "Set a specific task as the 'active' task for the current workspace session. Use this so that subsequent artifact operations default to this task without needing to provide the taskId every time. Only one task can be active at a time.",
+        "modelDescription": "Set a specific task as the 'active' task for the current workspace session. Use this so that subsequent artifact operations default to this task without needing to provide the taskId every time. Only one task can be active at a time; activating a different task replaces the previous active task. If the task is a subtask, provide its parent project ID via 'parentTaskId' for strict scoping.",
         "userDescription": "Sets a task as the active task for the workspace.",
         "canBeReferencedInPrompt": true,
         "inputSchema": {
@@ -90,7 +90,15 @@
           "properties": {
             "taskId": {
               "type": "string",
-              "description": "The ID of the task to activate."
+              "description": "The ID of the task to activate (e.g. 'feature-login')."
+            },
+            "parentTaskId": {
+              "type": "string",
+              "description": "Optional ID of the parent project. If the task is a subtask, providing this is required for strict scoping."
+            },
+            "activateProject": {
+              "type": "boolean",
+              "description": "Whether to also activate the parent project in the root index if this is a subtask. Defaults to true."
             }
           },
           "required": [
@@ -110,7 +118,7 @@
         "name": "start_task",
         "toolReferenceName": "start_task",
         "displayName": "Start Task",
-        "modelDescription": "Transition a task from 'open' to 'in-progress'. Use this when you actually begin working on a task. A task must be in 'open' status to be started. This is a primary state transition that signals active development.",
+        "modelDescription": "Transition a task from 'open' to 'in-progress'. Use this when you actually begin working on a task. A task must be in 'open' status to be started. This is a primary state transition that signals active development. If the task is a subtask, provide its parent project ID via 'parentTaskId' for strict scoping.",
         "userDescription": "Moves a task from 'open' to 'in-progress' status.",
         "canBeReferencedInPrompt": true,
         "inputSchema": {
@@ -119,6 +127,10 @@
             "taskId": {
               "type": "string",
               "description": "The ID of the task to start."
+            },
+            "parentTaskId": {
+              "type": "string",
+              "description": "Optional ID of the parent project. If the task is a subtask, providing this is required for strict scoping."
             }
           },
           "required": [
@@ -130,7 +142,7 @@
         "name": "close_task",
         "toolReferenceName": "close_task",
         "displayName": "Close Task",
-        "modelDescription": "Transition a task from 'in-progress' to 'closed'. Use this when all work and documentation (artifacts) for the task are complete. A task must be in 'in-progress' status to be closed. This is the final state in the task lifecycle.",
+        "modelDescription": "Transition a task from 'in-progress' to 'closed'. Use this when all work and documentation (artifacts) for the task are complete. A task must be in 'in-progress' status to be closed. This is the final state in the task lifecycle. If the task is a subtask, provide its parent project ID via 'parentTaskId' for strict scoping.",
         "userDescription": "Moves a task from 'in-progress' to 'closed' status.",
         "canBeReferencedInPrompt": true,
         "inputSchema": {
@@ -139,6 +151,10 @@
             "taskId": {
               "type": "string",
               "description": "The ID of the task to close."
+            },
+            "parentTaskId": {
+              "type": "string",
+              "description": "Optional ID of the parent project. If the task is a subtask, providing this is required for strict scoping."
             }
           },
           "required": [
@@ -158,7 +174,7 @@
         "name": "list_artifacts",
         "toolReferenceName": "list_artifacts",
         "displayName": "List Artifacts",
-        "modelDescription": "List artifact files associated with a specific task. If taskId is not provided, it defaults to the currently active task. Use this to see what documentation has already been created for a piece of work. Returns only artifacts that exist on disk.",
+        "modelDescription": "List artifact files associated with a specific task. If taskId is not provided, it defaults to the currently active task. If the task is a subtask, providing its parent project ID via 'parentTaskId' is recommended for strict scoping.",
         "userDescription": "Lists artifacts for a specific task (defaults to active).",
         "canBeReferencedInPrompt": true,
         "inputSchema": {
@@ -167,6 +183,10 @@
             "taskId": {
               "type": "string",
               "description": "The ID of the task. Defaults to the active task if omitted."
+            },
+            "parentTaskId": {
+              "type": "string",
+              "description": "Optional ID of the parent project. If the task is a subtask, providing this is required for strict scoping."
             }
           }
         }
@@ -175,7 +195,7 @@
         "name": "get_artifact",
         "toolReferenceName": "get_artifact",
         "displayName": "Get Artifact",
-        "modelDescription": "Retrieve the content of a specific artifact for a task. If the artifact file already exists, it returns the current content. If it doesn't exist, it returns the default template for that artifact type so you can fill it in. Defaults to active task if taskId is omitted.",
+        "modelDescription": "Retrieve the content of a specific artifact for a task. If the artifact file already exists, it returns the current content. If it doesn't exist, it returns the default template for that artifact type so you can fill it in. Defaults to active task if taskId is omitted. If the task is a subtask, providing its parent project ID via 'parentTaskId' is recommended for strict scoping.",
         "userDescription": "Reads an artifact's content or returns its template if it doesn't exist.",
         "canBeReferencedInPrompt": true,
         "inputSchema": {
@@ -183,11 +203,15 @@
           "properties": {
             "artifactType": {
               "type": "string",
-              "description": "The ID of the artifact type (e.g., 'research')."
+              "description": "The ID of the artifact type (e.g. 'research')."
             },
             "taskId": {
               "type": "string",
               "description": "The ID of the task. Defaults to the active task if omitted."
+            },
+            "parentTaskId": {
+              "type": "string",
+              "description": "Optional ID of the parent project. If the task is a subtask, providing this is required for strict scoping."
             }
           },
           "required": [
@@ -199,7 +223,7 @@
         "name": "update_artifact",
         "toolReferenceName": "update_artifact",
         "displayName": "Update Artifact",
-        "modelDescription": "Create or overwrite an artifact file with new content. Use this to save your research, plans, or walkthroughs. The content should be the full Markdown body (no frontmatter). Defaults to active task if taskId is omitted.",
+        "modelDescription": "Create or overwrite an artifact file with new content. Use this to save your research, plans, or walkthroughs. The content should be the full Markdown body (no frontmatter). Defaults to active task if taskId is omitted. If the task is a subtask, providing its parent project ID via 'parentTaskId' is recommended for strict scoping.",
         "userDescription": "Creates or updates an artifact file with provided content.",
         "canBeReferencedInPrompt": true,
         "inputSchema": {
@@ -216,6 +240,10 @@
             "taskId": {
               "type": "string",
               "description": "The ID of the task. Defaults to the active task if omitted."
+            },
+            "parentTaskId": {
+              "type": "string",
+              "description": "Optional ID of the parent project. If the task is a subtask, providing this is required for strict scoping."
             }
           },
           "required": [
@@ -301,6 +329,11 @@
     },
     "commands": [
       {
+        "command": "tasklist.activateTask",
+        "title": "TaskList: Activate Task",
+        "icon": "$(zap)"
+      },
+      {
         "command": "tasklist.refresh",
         "title": "TaskList: Refresh Task List",
         "icon": "$(refresh)"
@@ -336,18 +369,23 @@
       ],
       "view/item/context": [
         {
+          "command": "tasklist.activateTask",
+          "when": "view == tasklist-tree && viewItem =~ /.+:(open|in-progress|closed)$/ && workspaceFolderCount > 0",
+          "group": "inline"
+        },
+        {
           "command": "tasklist.startTask",
-          "when": "view == tasklist-tree && viewItem =~ /task:open/ && workspaceFolderCount > 0",
+          "when": "view == tasklist-tree && viewItem =~ /(task|subtask):open/ && workspaceFolderCount > 0",
           "group": "inline"
         },
         {
           "command": "tasklist.closeTask",
-          "when": "view == tasklist-tree && viewItem =~ /task:in-progress/ && workspaceFolderCount > 0",
+          "when": "view == tasklist-tree && viewItem =~ /(task|subtask):in-progress/ && workspaceFolderCount > 0",
           "group": "inline"
         },
         {
           "command": "tasklist.promoteTask",
-          "when": "view == tasklist-tree && viewItem =~ /task:.*/ && workspaceFolderCount > 0",
+          "when": "view == tasklist-tree && viewItem =~ /^task:.*/ && workspaceFolderCount > 0",
           "group": "1_modification"
         }
       ]

@@ -34,15 +34,16 @@ export class GetArtifactTool implements vscode.LanguageModelTool<IGetArtifactPar
     }
 
     /**
-     * Resolves the effective task ID from explicit input or the active task.
+     * Resolves the effective task context from explicit input or the active task.
      *
      * @param taskId - The optional task ID from the tool input.
-     * @returns The resolved task ID.
+     * @param parentTaskId - The optional parent task ID from the tool input.
+     * @returns The resolved task ID and optional parentTaskId.
      * @throws {Error} If no taskId is supplied and no task is currently active.
      */
-    private resolveTaskId(taskId?: string): string {
+    private resolveTaskContext(taskId?: string, parentTaskId?: string): { taskId: string; parentTaskId?: string } {
         if (taskId) {
-            return taskId;
+            return { taskId, parentTaskId };
         }
         const active = this.taskManager.getActiveTask();
         if (!active) {
@@ -51,7 +52,7 @@ export class GetArtifactTool implements vscode.LanguageModelTool<IGetArtifactPar
                 'Pass an explicit taskId or activate a task first using `activate_task`.'
             );
         }
-        return active.id;
+        return { taskId: active.id, parentTaskId: active.parentTaskId };
     }
 
     /**
@@ -65,14 +66,15 @@ export class GetArtifactTool implements vscode.LanguageModelTool<IGetArtifactPar
         options: vscode.LanguageModelToolInvocationPrepareOptions<IGetArtifactParams>,
         _token: vscode.CancellationToken
     ): Promise<vscode.PreparedToolInvocation> {
-        const { artifactType, taskId } = options.input;
+        const { artifactType, taskId, parentTaskId } = options.input;
         const taskLabel = taskId ?? 'the active task';
+        const parentLabel = parentTaskId ? ` in project '${parentTaskId}'` : '';
         return {
-            invocationMessage: `Reading '${artifactType}' artifact for ${taskLabel}`,
+            invocationMessage: `Reading '${artifactType}' artifact for ${taskLabel}${parentLabel}`,
             confirmationMessages: {
                 title: 'Get Artifact',
                 message: new vscode.MarkdownString(
-                    `Read the \`${artifactType}\` artifact for task \`${taskLabel}\`. ` +
+                    `Read the \`${artifactType}\` artifact for task \`${taskLabel}\`${parentLabel}. ` +
                     `If the file does not yet exist, the default template will be returned instead.`
                 ),
             },
@@ -96,10 +98,10 @@ export class GetArtifactTool implements vscode.LanguageModelTool<IGetArtifactPar
         _token: vscode.CancellationToken
     ): Promise<vscode.LanguageModelToolResult> {
         const { artifactType } = options.input;
-        const taskId = this.resolveTaskId(options.input.taskId);
+        const { taskId, parentTaskId } = this.resolveTaskContext(options.input.taskId, options.input.parentTaskId);
 
         try {
-            const content = this.artifactService.getArtifact(taskId, artifactType);
+            const content = this.artifactService.getArtifact(taskId, artifactType, parentTaskId);
 
             // Determine whether the content came from disk or from the template.
             // ArtifactService returns disk content when the file exists; otherwise
@@ -111,7 +113,7 @@ export class GetArtifactTool implements vscode.LanguageModelTool<IGetArtifactPar
             // surface both: a note line + the content.
             // We include a header note to guide the agent.
             const header =
-                `[Artifact: ${artifactType} | Task: ${taskId}]\n` +
+                `[Artifact: ${artifactType} | Task: ${taskId}${parentTaskId ? ` | Project: ${parentTaskId}` : ''}]\n` +
                 `Note: If the content below matches the template structure, ` +
                 `the artifact has not been saved yet. Use 'update_artifact' to persist your changes.\n\n`;
 
@@ -121,6 +123,13 @@ export class GetArtifactTool implements vscode.LanguageModelTool<IGetArtifactPar
         } catch (err: unknown) {
             const message = err instanceof Error ? err.message : String(err);
 
+            if (message.includes('not found')) {
+                throw new Error(
+                    `Task '${taskId}' not found. ` +
+                    `AI Agent might have forgot to provide a parent project id. ` +
+                    `Use 'list_tasks' to see available tasks, then retry with a valid taskId and parentTaskId if applicable.`
+                );
+            }
             if (message.includes('Unknown artifact type')) {
                 throw new Error(
                     `Unknown artifact type '${artifactType}'. ` +

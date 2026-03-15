@@ -1,23 +1,33 @@
 # Tighten Subtask API - APM Implementation Plan
 **Memory Strategy:** Dynamic-MD
-**Last Modification:** Plan creation by the Setup Agent.
+**Last Modification:** Added Task 2.3 to Phase 2 for documentation and refined Task 2.2 guidance.
 **Project Overview:** This project standardizes subtask access by requiring `parentTaskId` and implementing a cascading activation model across the Core, MCP, and VS Code extension layers. Includes improved error messaging for AI agents and Active Path highlighting in the UI.
 
 ## Phase 1: Core Logic Updates
 ### Task 1.1 – Core TaskManager Updates - Agent_Core
 - **Objective:** Update `TaskManager` to enforce `parentTaskId` scoping and conditionally activate the parent project during subtask activation.
 - **Output:** Updated `packages/core/src/services/taskManager.ts`.
-- **Guidance:** 
+- **Guidance:** **Depends on: None**
 - Modify `findEntryGlobally(id, parentTaskId)` to ONLY search the specified parent index if `parentTaskId` is provided, and ONLY the root index if it's not.
 - Update `activateTask(id, parentTaskId, activateProject)` to update both the parent project's index and the root index (conditionally based on `activateProject` flag) when a subtask is activated.
 - Update `getActiveTask()` to recursively resolve active IDs to find the most specific active task.
 
+### Task 1.3 – Complete TaskManager API Tightening - Agent_Core
+- **Objective:** Update remaining state transition methods to support `parentTaskId` scoping.
+- **Output:** Updated `packages/core/src/services/taskManager.ts`.
+- **Guidance:** **Depends on: Task 1.1 Output by Agent_Core**
+- Update `start_task(id, parentTaskId)` and `close_task(id, parentTaskId)` to accept and use the optional parent ID.
+- Update `taskExists(id, parentTaskId)` to support scoped existence checks.
+- Update `ArtifactService` methods (`listArtifacts`, `getArtifact`, `updateArtifact`) to accept an optional `parentTaskId` to maintain consistency with the core API.
+- Ensure all internal calls within `TaskManager` and `ArtifactService` are updated to pass context where available.
+
 ### Task 1.2 – Core Hierarchy Unit Tests - Agent_QA
 - **Objective:** Ensure unit tests cover the new scoping rules and conditional project activation.
 - **Output:** Passing tests in `packages/core/src/test/taskManager.test.ts`.
-- **Guidance:** **Depends on: Task 1.1 Output**
+- **Guidance:** **Depends on: Task 1.3 Output by Agent_Core**
 - Add test scenarios verifying that subtasks cannot be accessed without their `parentTaskId`.
 - Add test scenarios verifying the `activateProject` flag appropriately cascades activation up to the root project index.
+- Add test scenarios for `start_task` and `close_task` with and without `parentTaskId`.
 
 ## Phase 2: MCP Layer Updates
 ### Task 2.1 – Update MCP Tool Schemas - Agent_MCP
@@ -31,9 +41,16 @@
 ### Task 2.2 – Implement Hierarchical MCP Handlers - Agent_MCP
 - **Objective:** Connect the updated schemas to the core logic, including recovery-oriented error messaging.
 - **Output:** Updated `packages/mcp/src/handlers/taskHandlers.ts`.
-- **Guidance:** **Depends on: Task 2.1 Output**
+- **Guidance:** **Depends on: Task 2.1 Output by Agent_MCP**
 - Update handlers to pass the new `parentTaskId` and `activateProject` parameters to the `TaskManager` methods.
 - Implement explicit error handling/catch blocks for task lookups: if a task is not found, return string feedback instructing the agent: "Task not found. AI Agent might have forgot to provide a parent project id."
+
+### Task 2.3 – Update MCP Documentation & Examples - Agent_MCP
+- **Objective:** Update the MCP server's documentation and example tool calls to reflect the new hierarchical capabilities.
+- **Output:** Updated `packages/mcp/README.md` (if exists) and internal examples.
+- **Guidance:** **Depends on: Task 2.1 Output by Agent_MCP**
+- Document the new `parentTaskId` and `activateProject` parameters.
+- Provide clear examples of how to activate, start, and close subtasks using the MCP tools.
 
 ## Phase 3: VS Code Extension Updates
 ### Task 3.1 – Synchronize Extension LM Tools - Agent_Extension
@@ -57,6 +74,6 @@
 - **Objective:** Verify end-to-end functionality of the hierarchical system across all layers and update tasklist documentation.
 - **Output:** Updated tasklist documentation artifacts for `tighten-subtask-api` project and subtasks.
 - **Guidance:** **Depends on: Task 3.2 Output by Agent_Extension**
-1. Run automated integration tests (if any exist) for the VS Code extension to ensure recent changes haven't broken the test suite. Ensure changes to package/core work properly on MCP and Extension environments.
-2. Ad-Hoc Delegation - Request manual User validation of Extension UI (Active Path).
-3. Use the tasklist tools (e.g., `update_artifact`) to compile all test results and User feedback into the artifacts for the `tighten-subtask-api` project and `tsa-verification` subtask, ensuring all documentation lives in the official artifacts.
+- Run automated integration tests (if any exist) for the VS Code extension to ensure recent changes haven't broken the test suite. Ensure changes to package/core work properly on MCP and Extension environments.
+- Ad-Hoc Delegation - Request manual User validation of Extension UI (Active Path).
+- Use the tasklist tools (e.g., `update_artifact`) to compile all test results and User feedback into the artifacts for the `tighten-subtask-api` project and `tsa-verification` subtask, ensuring all documentation lives in the official artifacts.

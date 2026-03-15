@@ -36,17 +36,27 @@ export async function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(
         treeView,
         treeView.onDidExpandElement(e => {
-            e.element.collapsibleState = vscode.TreeItemCollapsibleState.Expanded;
-            treeProvider.refresh(e.element);
+            treeProvider.setExpanded(e.element.task.id, true);
         }),
         treeView.onDidCollapseElement(e => {
-            e.element.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
-            treeProvider.refresh(e.element);
+            treeProvider.setExpanded(e.element.task.id, false);
         })
     );
 
     // 2. Command Registration (Early)
     context.subscriptions.push(
+        vscode.commands.registerCommand('tasklist.activateTask', async (node: TaskTreeItem) => {
+            if (!taskManager) {
+                return;
+            }
+            try {
+                await taskManager.activateTask(node.task.id, node.task.parentTaskId);
+            } catch (error) {
+                const msg = `Failed to activate task: ${error instanceof Error ? error.message : String(error)}`;
+                outputChannel.appendLine(msg);
+                vscode.window.showErrorMessage(msg);
+            }
+        }),
         vscode.commands.registerCommand('tasklist.refresh', () => {
             treeProvider.refresh();
         }),
@@ -56,7 +66,7 @@ export async function activate(context: vscode.ExtensionContext) {
                 return;
             }
             try {
-                await taskManager.start_task(node.task.id);
+                await taskManager.start_task(node.task.id, node.task.parentTaskId);
             } catch (error) {
                 const msg = `Failed to start task: ${error instanceof Error ? error.message : String(error)}`;
                 outputChannel.appendLine(msg);
@@ -68,7 +78,7 @@ export async function activate(context: vscode.ExtensionContext) {
                 return;
             }
             try {
-                await taskManager.close_task(node.task.id);
+                await taskManager.close_task(node.task.id, node.task.parentTaskId);
             } catch (error) {
                 const msg = `Failed to close task: ${error instanceof Error ? error.message : String(error)}`;
                 outputChannel.appendLine(msg);
@@ -117,7 +127,8 @@ export async function activate(context: vscode.ExtensionContext) {
             }
             try {
                 const taskId = node.task.id;
-                const artifacts = artifactService.listArtifacts(taskId);
+                const parentTaskId = node.task.parentTaskId;
+                const artifacts = artifactService.listArtifacts(taskId, parentTaskId);
                 const detailsArtifact = artifacts.find(a => a.type.id === 'task-details');
 
                 if (detailsArtifact?.exists) {
@@ -131,8 +142,8 @@ export async function activate(context: vscode.ExtensionContext) {
                     );
 
                     if (selection === 'Create') {
-                        const content = artifactService.getArtifact(taskId, 'task-details');
-                        artifactService.updateArtifact(taskId, 'task-details', content);
+                        const content = artifactService.getArtifact(taskId, 'task-details', parentTaskId);
+                        artifactService.updateArtifact(taskId, 'task-details', content, parentTaskId);
                         // Refresh and open
                         const doc = await vscode.workspace.openTextDocument(vscode.Uri.file(detailsArtifact!.path));
                         await vscode.window.showTextDocument(doc);

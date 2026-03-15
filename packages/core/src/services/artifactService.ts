@@ -39,8 +39,8 @@ export class ArtifactService {
     // ── Private helpers ──────────────────────────────────────────────────────
 
     /** Returns the absolute path to the task directory inside `.tasks/`. */
-    private taskDir(taskId: string): string {
-        const result = this.taskManager.findEntryGlobally(taskId);
+    private taskDir(taskId: string, parentTaskId?: string): string {
+        const result = this.taskManager.findEntryGlobally(taskId, parentTaskId);
         if (result?.parentTaskId) {
             return path.join(this.workspaceRoot, '.tasks', result.parentTaskId, taskId);
         }
@@ -48,18 +48,21 @@ export class ArtifactService {
     }
 
     /** Returns the absolute path to a specific artifact file. */
-    private artifactPath(taskId: string, filename: string): string {
-        return path.join(this.taskDir(taskId), filename);
+    private artifactPath(taskId: string, filename: string, parentTaskId?: string): string {
+        return path.join(this.taskDir(taskId, parentTaskId), filename);
     }
 
     /**
      * Throws a descriptive error if `taskId` is not found in the task index.
      * Used to gate write operations against non-existent tasks.
+     * 
+     * @param taskId - ID of the task to check.
+     * @param parentTaskId - Optional ID of the parent project.
      */
-    private assertTaskExists(taskId: string): void {
-        if (!this.taskManager.taskExists(taskId)) {
+    private assertTaskExists(taskId: string, parentTaskId?: string): void {
+        if (!this.taskManager.taskExists(taskId, parentTaskId)) {
             throw new Error(
-                `Task '${taskId}' not found. Use 'create_task' to create it first.`
+                `Task '${taskId}' not found${parentTaskId ? ` in project '${parentTaskId}'` : ''}. Use 'create_task' to create it first.`
             );
         }
     }
@@ -72,12 +75,13 @@ export class ArtifactService {
      * given task.
      *
      * @param taskId - ID of the task whose artifact directory to inspect.
+     * @param parentTaskId - Optional ID of the parent project.
      * @throws {Error} If `taskId` does not exist in the task index.
      */
-    listArtifacts(taskId: string): ArtifactInfo[] {
-        this.assertTaskExists(taskId);
+    listArtifacts(taskId: string, parentTaskId?: string): ArtifactInfo[] {
+        this.assertTaskExists(taskId, parentTaskId);
         return this.artifactRegistry.getTypes().map(type => {
-            const filePath = this.artifactPath(taskId, type.filename);
+            const filePath = this.artifactPath(taskId, type.filename, parentTaskId);
             return {
                 type,
                 path: filePath,
@@ -93,12 +97,13 @@ export class ArtifactService {
      *
      * @param taskId - ID of the task the artifact belongs to.
      * @param typeId - ID of the artifact type to read.
+     * @param parentTaskId - Optional ID of the parent project.
      * @throws {Error} If `typeId` is not a registered artifact type.
      */
-    getArtifact(taskId: string, typeId: string): string {
+    getArtifact(taskId: string, typeId: string, parentTaskId?: string): string {
         // Let the registry throw first if the type is unknown.
         const type = this.artifactRegistry.getType(typeId);
-        const filePath = this.artifactPath(taskId, type.filename);
+        const filePath = this.artifactPath(taskId, type.filename, parentTaskId);
         if (fs.existsSync(filePath)) {
             return fs.readFileSync(filePath, 'utf-8');
         }
@@ -113,17 +118,18 @@ export class ArtifactService {
      * @param taskId  - ID of the task the artifact belongs to.
      * @param typeId  - ID of the artifact type to write.
      * @param content - Full Markdown content for the artifact (no frontmatter).
+     * @param parentTaskId - Optional ID of the parent project.
      * @throws {Error} If `taskId` does not exist in the task index.
      * @throws {Error} If `typeId` is not a registered artifact type.
      */
-    updateArtifact(taskId: string, typeId: string, content: string): void {
-        this.assertTaskExists(taskId);
+    updateArtifact(taskId: string, typeId: string, content: string, parentTaskId?: string): void {
+        this.assertTaskExists(taskId, parentTaskId);
         // Let the registry throw if the type is unknown.
         const type = this.artifactRegistry.getType(typeId);
-        const dir = this.taskDir(taskId);
+        const dir = this.taskDir(taskId, parentTaskId);
         if (!fs.existsSync(dir)) {
             fs.mkdirSync(dir, { recursive: true });
         }
-        fs.writeFileSync(this.artifactPath(taskId, type.filename), content, 'utf-8');
+        fs.writeFileSync(this.artifactPath(taskId, type.filename, parentTaskId), content, 'utf-8');
     }
 }
