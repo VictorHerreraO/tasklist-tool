@@ -97,26 +97,44 @@ export async function activate(context: vscode.ExtensionContext) {
                 vscode.window.showErrorMessage(msg);
             }
         }),
-        vscode.commands.registerCommand('tasklist.createTask', async () => {
-            const taskId = await vscode.window.showInputBox({
-                prompt: 'Enter Task ID',
-                placeHolder: 'e.g. feature-login'
-            });
-            if (taskId) {
-                try {
-                    if (taskManager) {
-                        await taskManager.createTask(taskId);
-                        vscode.window.showInformationMessage(`Task '${taskId}' created.`);
-                    } else {
-                        const msg = 'No active workspace. Task creation failed.';
-                        outputChannel.appendLine(msg);
-                        vscode.window.showErrorMessage(msg);
-                    }
-                } catch (error) {
-                    const msg = `Failed to create task: ${error instanceof Error ? error.message : String(error)}`;
+        vscode.commands.registerCommand('tasklist.createTask', async (args?: unknown) => {
+            // Handle array if passed from some VS Code contexts (e.g. command URIs)
+            const normalizedArgs = (Array.isArray(args) ? args[0] : args) as {
+                id?: string;
+                type?: 'task' | 'project';
+                parentTaskId?: string;
+            } | undefined;
+
+            let taskId = normalizedArgs?.id;
+            const type = normalizedArgs?.type || 'task';
+            const parentTaskId = normalizedArgs?.parentTaskId;
+
+            if (!taskId) {
+                // Interactive fallback
+                // TODO: In Phase 2, replace this with startTaskWizard()
+                taskId = await vscode.window.showInputBox({
+                    prompt: 'Enter Task ID',
+                    placeHolder: 'e.g. feature-login'
+                });
+            }
+
+            if (!taskId) {
+                return;
+            }
+
+            try {
+                if (taskManager) {
+                    await taskManager.createTask(taskId, type as any, parentTaskId);
+                    vscode.window.showInformationMessage(`Task '${taskId}' created.`);
+                } else {
+                    const msg = 'No active workspace. Task creation failed.';
                     outputChannel.appendLine(msg);
                     vscode.window.showErrorMessage(msg);
                 }
+            } catch (error) {
+                const msg = `Failed to create task: ${error instanceof Error ? error.message : String(error)}`;
+                outputChannel.appendLine(msg);
+                vscode.window.showErrorMessage(msg);
             }
         }),
         vscode.commands.registerCommand('tasklist.openTaskDetails', async (node: TaskTreeItem) => {
