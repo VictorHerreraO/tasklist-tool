@@ -151,6 +151,10 @@ export class TasklistWizard {
                 if (!value || value.trim().length === 0) {
                     return 'ID cannot be empty';
                 }
+                const existing = this.taskManager.findEntryGlobally(value, state.project?.id);
+                if (existing) {
+                    return `ID '${value}' already exists.`;
+                }
                 return undefined;
             },
             shouldResume: async () => true

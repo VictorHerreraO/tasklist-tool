@@ -100,27 +100,21 @@ export class TaskManager {
         return index.tasks.find(t => t.id === id);
     }
 
+    /**
+     * Finds a task entry within a specific project OR the root index.
+     */
     public findEntryGlobally(id: string, parentTaskId?: string): { entry: TaskEntry; index: TaskIndex; parentTaskId?: string } | undefined {
-        if (parentTaskId) {
-            const nestedIndex = this.readIndex(parentTaskId);
-            const nestedEntry = this.findEntry(nestedIndex, id);
-            if (nestedEntry) {
-                return { entry: nestedEntry, index: nestedIndex, parentTaskId };
-            }
-            return undefined;
-        }
-
-        const rootIndex = this.readIndex();
-        const rootEntry = this.findEntry(rootIndex, id);
-        if (rootEntry) {
-            return { entry: rootEntry, index: rootIndex };
+        const index = this.readIndex(parentTaskId);
+        const entry = this.findEntry(index, id);
+        if (entry) {
+            return { entry, index, parentTaskId };
         }
         return undefined;
     }
 
     /**
      * Recursively searches for an entry in all project indices.
-     * Used internally for parent validation where the exact parent location might not be known.
+     * WARNING: If IDs are not globally unique, this returns the first match found.
      */
     private findEntryRecursive(id: string, currentParentId?: string): { entry: TaskEntry; index: TaskIndex; parentTaskId?: string } | undefined {
         const index = this.readIndex(currentParentId);
@@ -138,6 +132,17 @@ export class TaskManager {
         return undefined;
     }
 
+    /**
+     * Helper to find a project anywhere in the workspace.
+     */
+    private findProjectGlobally(projectId: string): { entry: TaskEntry; index: TaskIndex; parentTaskId?: string } | undefined {
+        const result = this.findEntryRecursive(projectId);
+        if (result?.entry.type === 'project') {
+            return result;
+        }
+        return undefined;
+    }
+
     // ─── Public API ─────────────────────────────────────────────────────────
 
     /**
@@ -149,24 +154,21 @@ export class TaskManager {
      * @throws {Error} If a task with `id` already exists or parent is invalid.
      */
     createTask(id: string, type: TaskType = 'task', parentTaskId?: string): TaskEntry {
+        // Enforce uniqueness only within the target scope
+        if (this.findEntryGlobally(id, parentTaskId)) {
+            throw new Error(`Task '${id}' already exists${parentTaskId ? ` in project '${parentTaskId}'` : ''}.`);
+        }
+
         if (parentTaskId) {
-            // Verify parent task exists and is of type 'project'
-            // We search recursively because the creator might not know the grandparent
-            const result = this.findEntryRecursive(parentTaskId);
-            const parentEntry = result?.entry;
-            if (!parentEntry) {
-                throw new Error(`Parent task '${parentTaskId}' not found.`);
+            const parentResult = this.findProjectGlobally(parentTaskId);
+            if (!parentResult) {
+                throw new Error(`Parent project '${parentTaskId}' not found.`);
             }
-            if (parentEntry.type !== 'project') {
+            if (parentResult.entry.type !== 'project') {
                 throw new Error(`Parent task '${parentTaskId}' is not a project.`);
             }
 
-            // Save in the nested index
             const nestedIndex = this.readIndex(parentTaskId);
-            if (this.findEntry(nestedIndex, id)) {
-                throw new Error(`Task '${id}' already exists in project '${parentTaskId}'.`);
-            }
-
             const now = Date.now();
             const entry: TaskEntry = {
                 id,
