@@ -98,6 +98,13 @@ export async function activate(context: vscode.ExtensionContext) {
                 vscode.window.showErrorMessage(msg);
             }
         }),
+        vscode.commands.registerCommand('tasklist.addSubtask', async (node: TaskTreeItem) => {
+            if (!taskManager) {
+                return;
+            }
+            // Trigger creation wizard directly on the ID input step for this project
+            await TasklistWizard.run(taskManager, node.task.id);
+        }),
         vscode.commands.registerCommand('tasklist.createTask', async (args?: unknown) => {
             // Handle array if passed from some VS Code contexts (e.g. command URIs)
             const normalizedArgs = (Array.isArray(args) ? args[0] : args) as {
@@ -113,7 +120,7 @@ export async function activate(context: vscode.ExtensionContext) {
             if (!taskId) {
                 // Interactive flow
                 if (taskManager) {
-                    await TasklistWizard.run(taskManager);
+                    await TasklistWizard.run(taskManager, parentTaskId);
                 } else {
                     const msg = 'No active workspace. Task creation failed.';
                     outputChannel.appendLine(msg);

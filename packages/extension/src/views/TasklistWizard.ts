@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { TaskManager, SmartResultProvider, TaskEntry } from '@tasklist/core';
-import { MultiStepInput } from './MultiStepInput.js';
+import { MultiStepInput, InputStep } from './MultiStepInput.js';
 
 interface State {
     title: string;
@@ -22,9 +22,9 @@ export class TasklistWizard {
      * Runs the Tasklist creation wizard.
      * @param taskManager The TaskManager instance to use for creation.
      */
-    public static async run(taskManager: TaskManager): Promise<void> {
+    public static async run(taskManager: TaskManager, parentTaskId?: string): Promise<void> {
         const wizard = new TasklistWizard(taskManager);
-        await wizard.run();
+        await wizard.run(parentTaskId);
     }
 
     private readonly smartResultProvider: SmartResultProvider;
@@ -32,15 +32,27 @@ export class TasklistWizard {
     constructor(private readonly taskManager: TaskManager) {
         this.smartResultProvider = new SmartResultProvider(taskManager);
     }
-
-    private async run() {
+    private async run(parentTaskId?: string) {
         const state: Partial<State> = {
             title: 'Create Task or Project',
             totalSteps: 2,
             type: 'task'
         };
 
-        await MultiStepInput.run(input => this.pickProject(input, state));
+        let startStep: InputStep = input => this.pickProject(input, state);
+
+        if (parentTaskId) {
+            const result = this.taskManager.findEntryGlobally(parentTaskId);
+            if (result && result.entry.type === 'project') {
+                state.project = result.entry;
+                state.type = 'task';
+                state.step = 1;
+                state.totalSteps = 1;
+                startStep = input => this.inputTaskId(input, state);
+            }
+        }
+
+        await MultiStepInput.run(startStep);
 
         if (state.taskId) {
             try {
@@ -139,11 +151,13 @@ export class TasklistWizard {
     private async inputTaskId(input: MultiStepInput, state: Partial<State>) {
         const parentInfo = state.project ? ` in project '${state.project.id}'` : '';
         const typeInfo = state.type === 'project' ? 'Project' : 'Task';
+        const step = state.step || 2;
+        const totalSteps = state.totalSteps || 2;
 
         const taskId = await input.showInputBox({
             title: state.title!,
-            step: 2,
-            totalSteps: 2,
+            step: step,
+            totalSteps: totalSteps,
             value: state.taskId || '',
             prompt: `Enter ID for new ${typeInfo}${parentInfo}`,
             placeholder: 'e.g. feature-login',

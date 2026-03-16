@@ -216,7 +216,7 @@ export class TaskTreeItem extends vscode.TreeItem {
         tooltip.appendMarkdown(`*Click to open details*`);
         this.tooltip = tooltip;
 
-        this.contextValue = `${this.task.parentTaskId ? 'subtask' : this.task.type}:${this.task.status}${this.isActive ? ':active' : ''}`;
+        this.contextValue = `${this.task.type}${this.task.parentTaskId ? ':subtask' : ''}:${this.task.status}${this.isActive ? ':active' : ''}`;
 
         // Set click command
         this.command = {

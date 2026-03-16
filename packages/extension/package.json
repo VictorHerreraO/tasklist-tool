@@ -334,6 +334,11 @@
         "icon": "$(zap)"
       },
       {
+        "command": "tasklist.addSubtask",
+        "title": "TaskList: Add Subtask",
+        "icon": "$(add)"
+      },
+      {
         "command": "tasklist.refresh",
         "title": "TaskList: Refresh Task List",
         "icon": "$(refresh)"
@@ -373,6 +378,11 @@
         }
       ],
       "view/item/context": [
+        {
+          "command": "tasklist.addSubtask",
+          "when": "view == tasklist-tree && viewItem =~ /^project:/ && workspaceFolderCount > 0",
+          "group": "inline"
+        },
         {
           "command": "tasklist.activateTask",
           "when": "view == tasklist-tree && viewItem =~ /.+:(open|in-progress|closed)$/ && workspaceFolderCount > 0",
