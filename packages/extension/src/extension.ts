@@ -13,6 +13,7 @@ import { UpdateArtifactTool } from './tools/updateArtifactTool.js';
 import { RegisterArtifactTypeTool } from './tools/registerArtifactTypeTool.js';
 import { PromoteToProjectTool } from './tools/promoteToProjectTool.js';
 import { TaskTreeProvider, TaskTreeItem } from './views/TaskTreeProvider.js';
+import { TasklistWizard } from './views/TasklistWizard.js';
 
 /**
  * Activates the extension.
@@ -110,15 +111,14 @@ export async function activate(context: vscode.ExtensionContext) {
             const parentTaskId = normalizedArgs?.parentTaskId;
 
             if (!taskId) {
-                // Interactive fallback
-                // TODO: In Phase 2, replace this with startTaskWizard()
-                taskId = await vscode.window.showInputBox({
-                    prompt: 'Enter Task ID',
-                    placeHolder: 'e.g. feature-login'
-                });
-            }
-
-            if (!taskId) {
+                // Interactive flow
+                if (taskManager) {
+                    await TasklistWizard.run(taskManager);
+                } else {
+                    const msg = 'No active workspace. Task creation failed.';
+                    outputChannel.appendLine(msg);
+                    vscode.window.showErrorMessage(msg);
+                }
                 return;
             }
 

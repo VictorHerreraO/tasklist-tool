@@ -26,6 +26,7 @@ export interface QuickPickParameters<T extends QuickPickItem> {
     placeholder: string;
     buttons?: QuickInputButton[];
     shouldResume: () => Promise<boolean>;
+    onDidChangeValue?: (value: string, input: any) => void;
 }
 
 /**
@@ -94,7 +95,7 @@ export class MultiStepInput {
      * Shows a QuickPick to the user.
      * @param parameters Configuration for the QuickPick.
      */
-    async showQuickPick<T extends QuickPickItem, P extends QuickPickParameters<T>>({ title, step, totalSteps, items, activeItem, placeholder, buttons, shouldResume }: P) {
+    async showQuickPick<T extends QuickPickItem, P extends QuickPickParameters<T>>({ title, step, totalSteps, items, activeItem, placeholder, buttons, shouldResume, onDidChangeValue }: P) {
         const disposables: Disposable[] = [];
         try {
             return await new Promise<T | (P extends { buttons: (infer I)[] } ? I : never)>((resolve, reject) => {
@@ -129,6 +130,9 @@ export class MultiStepInput {
                             .catch(reject);
                     })
                 );
+                if (onDidChangeValue) {
+                    disposables.push(input.onDidChangeValue(value => onDidChangeValue(value, input)));
+                }
                 if (this.current) {
                     this.current.dispose();
                 }
