@@ -131,7 +131,15 @@ export async function activate(context: vscode.ExtensionContext) {
                 return;
             }
             // Trigger creation wizard directly on the ID input step for this project
-            await TasklistWizard.run(taskManager, node.task.id);
+            const result = await TasklistWizard.run(taskManager, node.task.id);
+            if (result) {
+                setTimeout(async () => {
+                    const item = await treeProvider.getItemForId(result.id, result.parentTaskId);
+                    if (item) {
+                        treeView.reveal(item, { select: true, focus: true, expand: true });
+                    }
+                }, 200);
+            }
         }),
         vscode.commands.registerCommand('tasklist.createTask', async (args?: unknown) => {
             // Handle array if passed from some VS Code contexts (e.g. command URIs)
@@ -148,7 +156,15 @@ export async function activate(context: vscode.ExtensionContext) {
             if (!taskId) {
                 // Interactive flow
                 if (taskManager) {
-                    await TasklistWizard.run(taskManager, parentTaskId);
+                    const result = await TasklistWizard.run(taskManager, parentTaskId);
+                    if (result) {
+                        setTimeout(async () => {
+                            const item = await treeProvider.getItemForId(result.id, result.parentTaskId);
+                            if (item) {
+                                treeView.reveal(item, { select: true, focus: true, expand: true });
+                            }
+                        }, 200);
+                    }
                 } else {
                     const msg = 'No active workspace. Task creation failed.';
                     outputChannel.appendLine(msg);

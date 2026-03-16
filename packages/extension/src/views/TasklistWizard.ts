@@ -22,9 +22,9 @@ export class TasklistWizard {
      * Runs the Tasklist creation wizard.
      * @param taskManager The TaskManager instance to use for creation.
      */
-    public static async run(taskManager: TaskManager, parentTaskId?: string): Promise<void> {
+    public static async run(taskManager: TaskManager, parentTaskId?: string): Promise<{ id: string, type: 'task' | 'project', parentTaskId?: string } | undefined> {
         const wizard = new TasklistWizard(taskManager);
-        await wizard.run(parentTaskId);
+        return wizard.run(parentTaskId);
     }
 
     private readonly smartResultProvider: SmartResultProvider;
@@ -32,7 +32,7 @@ export class TasklistWizard {
     constructor(private readonly taskManager: TaskManager) {
         this.smartResultProvider = new SmartResultProvider(taskManager);
     }
-    private async run(parentTaskId?: string) {
+    private async run(parentTaskId?: string): Promise<{ id: string, type: 'task' | 'project', parentTaskId?: string } | undefined> {
         const state: Partial<State> = {
             title: 'Create Task or Project',
             totalSteps: 2,
@@ -57,11 +57,18 @@ export class TasklistWizard {
         if (state.taskId) {
             try {
                 await this.taskManager.createTask(state.taskId, state.type, state.project?.id);
-                vscode.window.showInformationMessage(`${state.type === 'project' ? 'Project' : 'Task'} '${state.taskId}' created.`);
+
+                const successMsg = state.project
+                    ? `Task '${state.taskId}' created in project '${state.project.id}'.`
+                    : `${state.type === 'project' ? 'Project' : 'Standalone task'} '${state.taskId}' created.`;
+
+                vscode.window.showInformationMessage(successMsg);
+                return { id: state.taskId!, type: state.type!, parentTaskId: state.project?.id };
             } catch (error) {
                 vscode.window.showErrorMessage(`Failed to create ${state.type}: ${error instanceof Error ? error.message : String(error)}`);
             }
         }
+        return undefined;
     }
 
     private async pickProject(input: MultiStepInput, state: Partial<State>) {
@@ -160,7 +167,7 @@ export class TasklistWizard {
             totalSteps: totalSteps,
             value: state.taskId || '',
             prompt: `Enter ID for new ${typeInfo}${parentInfo}`,
-            placeholder: 'e.g. feature-login',
+            placeholder: 'e.g. login-page, user-auth',
             validate: async (value) => {
                 if (!value || value.trim().length === 0) {
                     return 'ID cannot be empty';

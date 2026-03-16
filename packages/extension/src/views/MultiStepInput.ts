@@ -125,7 +125,11 @@ export class MultiStepInput {
                     input.onDidChangeSelection(selectedItems => resolve(selectedItems[0])),
                     input.onDidHide(() => {
                         (async () => {
-                            reject(shouldResume && await shouldResume() ? InputFlowAction.resume : InputFlowAction.cancel);
+                            if (this.steps.length > 1) {
+                                reject(InputFlowAction.back);
+                            } else {
+                                reject(shouldResume && await shouldResume() ? InputFlowAction.resume : InputFlowAction.cancel);
+                            }
                         })()
                             .catch(reject);
                     })
@@ -193,7 +197,11 @@ export class MultiStepInput {
                     }),
                     input.onDidHide(() => {
                         (async () => {
-                            reject(shouldResume && await shouldResume() ? InputFlowAction.resume : InputFlowAction.cancel);
+                            if (this.steps.length > 1) {
+                                reject(InputFlowAction.back);
+                            } else {
+                                reject(shouldResume && await shouldResume() ? InputFlowAction.resume : InputFlowAction.cancel);
+                            }
                         })()
                             .catch(reject);
                     })
