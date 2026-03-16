@@ -362,9 +362,14 @@
     "menus": {
       "view/title": [
         {
-          "command": "tasklist.refresh",
+          "command": "tasklist.createTask",
           "when": "view == tasklist-tree && workspaceFolderCount > 0",
           "group": "navigation"
+        },
+        {
+          "command": "tasklist.refresh",
+          "when": "view == tasklist-tree && workspaceFolderCount > 0",
+          "group": "secondary"
         }
       ],
       "view/item/context": [
@@ -386,7 +391,7 @@
         {
           "command": "tasklist.promoteTask",
           "when": "view == tasklist-tree && viewItem =~ /^task:.*/ && workspaceFolderCount > 0",
-          "group": "1_modification"
+          "group": "secondary"
         }
       ]
     },
