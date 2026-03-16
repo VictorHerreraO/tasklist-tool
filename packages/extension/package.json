@@ -385,17 +385,17 @@
         },
         {
           "command": "tasklist.activateTask",
-          "when": "view == tasklist-tree && viewItem =~ /.+:(open|in-progress|closed)$/ && workspaceFolderCount > 0",
+          "when": "view == tasklist-tree && viewItem =~ /.+:(open|in-progress|closed)(:active)?$/ && workspaceFolderCount > 0",
           "group": "inline"
         },
         {
           "command": "tasklist.startTask",
-          "when": "view == tasklist-tree && viewItem =~ /(task|subtask):open/ && workspaceFolderCount > 0",
+          "when": "view == tasklist-tree && viewItem =~ /(task|subtask):open(:active)?$/ && workspaceFolderCount > 0",
           "group": "inline"
         },
         {
           "command": "tasklist.closeTask",
-          "when": "view == tasklist-tree && viewItem =~ /(task|subtask):in-progress/ && workspaceFolderCount > 0",
+          "when": "view == tasklist-tree && viewItem =~ /(task|subtask):in-progress(:active)?$/ && workspaceFolderCount > 0",
           "group": "inline"
         },
         {

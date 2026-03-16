@@ -1,4 +1,4 @@
-import { QuickPickItem, window, Disposable, QuickInputButton, QuickInput, QuickInputButtons } from 'vscode';
+import { QuickPickItem, window, Disposable, QuickInputButton, QuickInput, QuickInputButtons, QuickPick } from 'vscode';
 
 /**
  * Actions that can be taken during the input flow.
@@ -26,7 +26,7 @@ export interface QuickPickParameters<T extends QuickPickItem> {
     placeholder: string;
     buttons?: QuickInputButton[];
     shouldResume: () => Promise<boolean>;
-    onDidChangeValue?: (value: string, input: any) => void;
+    onDidChangeValue?: (value: string, input: QuickPick<T>) => void;
 }
 
 /**
@@ -119,19 +119,16 @@ export class MultiStepInput {
                         if (item === QuickInputButtons.Back) {
                             reject(InputFlowAction.back);
                         } else {
-                            resolve(item as any);
+                            resolve(item as unknown as (P extends { buttons: (infer I)[] } ? I : never));
                         }
                     }),
                     input.onDidChangeSelection(selectedItems => resolve(selectedItems[0])),
                     input.onDidHide(() => {
-                        (async () => {
-                            if (this.steps.length > 1) {
-                                reject(InputFlowAction.back);
-                            } else {
-                                reject(shouldResume && await shouldResume() ? InputFlowAction.resume : InputFlowAction.cancel);
-                            }
-                        })()
-                            .catch(reject);
+                        if (this.steps.length > 1) {
+                            reject(InputFlowAction.back);
+                        } else {
+                            reject(InputFlowAction.cancel);
+                        }
                     })
                 );
                 if (onDidChangeValue) {
@@ -174,7 +171,7 @@ export class MultiStepInput {
                         if (item === QuickInputButtons.Back) {
                             reject(InputFlowAction.back);
                         } else {
-                            resolve(item as any);
+                            resolve(item as unknown as (P extends { buttons: (infer I)[] } ? I : never));
                         }
                     }),
                     input.onDidAccept(async () => {
@@ -196,14 +193,11 @@ export class MultiStepInput {
                         }
                     }),
                     input.onDidHide(() => {
-                        (async () => {
-                            if (this.steps.length > 1) {
-                                reject(InputFlowAction.back);
-                            } else {
-                                reject(shouldResume && await shouldResume() ? InputFlowAction.resume : InputFlowAction.cancel);
-                            }
-                        })()
-                            .catch(reject);
+                        if (this.steps.length > 1) {
+                            reject(InputFlowAction.back);
+                        } else {
+                            reject(InputFlowAction.cancel);
+                        }
                     })
                 );
                 if (this.current) {

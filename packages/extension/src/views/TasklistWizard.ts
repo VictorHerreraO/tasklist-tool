@@ -17,14 +17,24 @@ type WizardItem = vscode.QuickPickItem & { project?: TaskEntry; action?: string 
  * Interactive wizard for creating tasks and projects.
  */
 export class TasklistWizard {
+    private static isRunning = false;
 
     /**
      * Runs the Tasklist creation wizard.
      * @param taskManager The TaskManager instance to use for creation.
      */
     public static async run(taskManager: TaskManager, parentTaskId?: string): Promise<{ id: string, type: 'task' | 'project', parentTaskId?: string } | undefined> {
-        const wizard = new TasklistWizard(taskManager);
-        return wizard.run(parentTaskId);
+        if (TasklistWizard.isRunning) {
+            return undefined;
+        }
+
+        TasklistWizard.isRunning = true;
+        try {
+            const wizard = new TasklistWizard(taskManager);
+            return await wizard.run(parentTaskId);
+        } finally {
+            TasklistWizard.isRunning = false;
+        }
     }
 
     private readonly smartResultProvider: SmartResultProvider;
@@ -112,7 +122,7 @@ export class TasklistWizard {
             totalSteps: 2,
             placeholder: 'Select a parent project or create new...',
             items: createStaticItems(),
-            shouldResume: async () => true,
+            shouldResume: async () => false,
             onDidChangeValue: (value, quickPick) => {
                 if (!value) {
                     quickPick.items = createStaticItems();
@@ -178,7 +188,7 @@ export class TasklistWizard {
                 }
                 return undefined;
             },
-            shouldResume: async () => true
+            shouldResume: async () => false
         });
 
         if (typeof taskId === 'string') {

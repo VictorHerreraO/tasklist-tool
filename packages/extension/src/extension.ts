@@ -45,7 +45,9 @@ export async function activate(context: vscode.ExtensionContext) {
     );
 
     const getSelectedNode = (node: TaskTreeItem | undefined): TaskTreeItem | undefined => {
-        if (node) return node;
+        if (node) {
+            return node;
+        }
         if (treeView.selection && treeView.selection.length > 0) {
             return treeView.selection[0];
         }
@@ -130,8 +132,17 @@ export async function activate(context: vscode.ExtensionContext) {
             if (!taskManager) {
                 return;
             }
+            const target = getSelectedNode(node);
+            if (!target) {
+                vscode.window.showWarningMessage("No project selected in the Sidebar.");
+                return;
+            }
+            if (target.task.type !== 'project') {
+                vscode.window.showWarningMessage("Subtasks can only be added to projects.");
+                return;
+            }
             // Trigger creation wizard directly on the ID input step for this project
-            const result = await TasklistWizard.run(taskManager, node.task.id);
+            const result = await TasklistWizard.run(taskManager, target.task.id);
             if (result) {
                 setTimeout(async () => {
                     const item = await treeProvider.getItemForId(result.id, result.parentTaskId);
@@ -142,6 +153,12 @@ export async function activate(context: vscode.ExtensionContext) {
             }
         }),
         vscode.commands.registerCommand('tasklist.createTask', async (args?: unknown) => {
+            // If triggered from a tree item context (e.g., Command Palette with selection), 
+            // ignore the node and launch the wizard for a clean experience.
+            if (args instanceof TaskTreeItem || (args && typeof args === 'object' && 'task' in args)) {
+                args = undefined;
+            }
+
             // Handle array if passed from some VS Code contexts (e.g. command URIs)
             const normalizedArgs = (Array.isArray(args) ? args[0] : args) as {
                 id?: string;
@@ -149,7 +166,7 @@ export async function activate(context: vscode.ExtensionContext) {
                 parentTaskId?: string;
             } | undefined;
 
-            let taskId = normalizedArgs?.id;
+            const taskId = normalizedArgs?.id;
             const type = normalizedArgs?.type || 'task';
             const parentTaskId = normalizedArgs?.parentTaskId;
 
@@ -175,7 +192,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
             try {
                 if (taskManager) {
-                    await taskManager.createTask(taskId, type as any, parentTaskId);
+                    await taskManager.createTask(taskId, type as 'task' | 'project', parentTaskId);
                     vscode.window.showInformationMessage(`Task '${taskId}' created.`);
                 } else {
                     const msg = 'No active workspace. Task creation failed.';

@@ -7,7 +7,9 @@ suite('Command Integration Tests', () => {
     test('tasklist.createTask with arguments creates a task', async () => {
         // Wait for workspace folders to be ready
         for (let i = 0; i < 50; i++) {
-            if (vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders.length > 0) break;
+            if (vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders.length > 0) {
+                break;
+            }
             await new Promise(resolve => setTimeout(resolve, 100));
         }
 
