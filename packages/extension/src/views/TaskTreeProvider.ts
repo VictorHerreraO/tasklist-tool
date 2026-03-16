@@ -5,7 +5,7 @@ import { TaskManager, TaskEntry, TaskStatus } from '@tasklist/core';
  * Provides a tree view of hierarchical tasks (Projects and Subtasks).
  */
 export class TaskTreeProvider implements vscode.TreeDataProvider<TaskTreeItem> {
-    private expandedTaskIds: Set<string> = new Set();
+    private expandedItemIds: Set<string> = new Set();
     private _onDidChangeTreeData: vscode.EventEmitter<TaskTreeItem | undefined | null | void> =
         new vscode.EventEmitter<TaskTreeItem | undefined | null | void>();
     readonly onDidChangeTreeData: vscode.Event<TaskTreeItem | undefined | null | void> =
@@ -24,11 +24,11 @@ export class TaskTreeProvider implements vscode.TreeDataProvider<TaskTreeItem> {
     /**
      * Records the expansion state of a specific item.
      */
-    setExpanded(taskId: string, expanded: boolean): void {
+    setExpanded(itemId: string, expanded: boolean): void {
         if (expanded) {
-            this.expandedTaskIds.add(taskId);
+            this.expandedItemIds.add(itemId);
         } else {
-            this.expandedTaskIds.delete(taskId);
+            this.expandedItemIds.delete(itemId);
         }
     }
 
@@ -64,14 +64,15 @@ export class TaskTreeProvider implements vscode.TreeDataProvider<TaskTreeItem> {
 
         return tasks.map(task => {
             const isActive = this.isPathActive(task, activeTask);
+            const compositeId = (task.parentTaskId ?? 'root') + ':' + task.id;
 
             // Ensure active path projects are recorded as expanded so they persist
             // even if the active task changes later.
             if (isActive && task.type === 'project') {
-                this.expandedTaskIds.add(task.id);
+                this.expandedItemIds.add(compositeId);
             }
 
-            const isManualExpanded = this.expandedTaskIds.has(task.id);
+            const isManualExpanded = this.expandedItemIds.has(compositeId);
             const state = task.type === 'project'
                 ? (isActive || isManualExpanded ? vscode.TreeItemCollapsibleState.Expanded : vscode.TreeItemCollapsibleState.Collapsed)
                 : vscode.TreeItemCollapsibleState.None;
@@ -88,7 +89,7 @@ export class TaskTreeProvider implements vscode.TreeDataProvider<TaskTreeItem> {
         if (!activeTask) {
             return false;
         }
-        if (task.id === activeTask.id) {
+        if (task.id === activeTask.id && task.parentTaskId === activeTask.parentTaskId) {
             return true;
         }
 
@@ -96,6 +97,9 @@ export class TaskTreeProvider implements vscode.TreeDataProvider<TaskTreeItem> {
         let currentId = activeTask.parentTaskId;
         while (currentId) {
             if (task.id === currentId) {
+                // If the candidate task is a project, check if it matches the currentId
+                // Note: project IDs are globally unique for now in this architecture 
+                // but we should still be careful.
                 return true;
             }
             if (!this.taskManager) {
@@ -139,13 +143,14 @@ export class TaskTreeProvider implements vscode.TreeDataProvider<TaskTreeItem> {
         if (result) {
             const activeTask = this.taskManager.getActiveTask();
             const isActive = this.isPathActive(result.entry, activeTask);
+            const compositeId = (result.entry.parentTaskId ?? 'root') + ':' + result.entry.id;
 
             // Ensure active path projects are recorded as expanded
             if (isActive && result.entry.type === 'project') {
-                this.expandedTaskIds.add(result.entry.id);
+                this.expandedItemIds.add(compositeId);
             }
 
-            const isManualExpanded = this.expandedTaskIds.has(result.entry.id);
+            const isManualExpanded = this.expandedItemIds.has(compositeId);
             const state = result.entry.type === 'project'
                 ? (isActive || isManualExpanded ? vscode.TreeItemCollapsibleState.Expanded : vscode.TreeItemCollapsibleState.Collapsed)
                 : vscode.TreeItemCollapsibleState.None;
@@ -159,22 +164,23 @@ export class TaskTreeProvider implements vscode.TreeDataProvider<TaskTreeItem> {
      * Helper to find or create a TaskTreeItem for a specific taskId.
      * Used by the reveal logic to find the entry point.
      */
-    async getItemForId(taskId: string): Promise<TaskTreeItem | undefined> {
+    async getItemForId(taskId: string, parentTaskId?: string): Promise<TaskTreeItem | undefined> {
         if (!this.taskManager) {
             return undefined;
         }
 
-        const result = this.taskManager.findEntryGlobally(taskId);
+        const result = this.taskManager.findEntryGlobally(taskId, parentTaskId);
         if (result) {
             const activeTask = this.taskManager.getActiveTask();
             const isActive = this.isPathActive(result.entry, activeTask);
+            const compositeId = (result.entry.parentTaskId ?? 'root') + ':' + result.entry.id;
 
             // Ensure active path projects are recorded as expanded
             if (isActive && result.entry.type === 'project') {
-                this.expandedTaskIds.add(result.entry.id);
+                this.expandedItemIds.add(compositeId);
             }
 
-            const isManualExpanded = this.expandedTaskIds.has(result.entry.id);
+            const isManualExpanded = this.expandedItemIds.has(compositeId);
             const state = result.entry.type === 'project'
                 ? (isActive || isManualExpanded ? vscode.TreeItemCollapsibleState.Expanded : vscode.TreeItemCollapsibleState.Collapsed)
                 : vscode.TreeItemCollapsibleState.None;
@@ -195,6 +201,7 @@ export class TaskTreeItem extends vscode.TreeItem {
         collapsibleState: vscode.TreeItemCollapsibleState = vscode.TreeItemCollapsibleState.None
     ) {
         super(task.id, collapsibleState);
+        this.id = (task.parentTaskId ?? 'root') + ':' + task.id;
 
         // Update label and description for active tasks
         if (this.isActive) {

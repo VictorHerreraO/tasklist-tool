@@ -37,12 +37,20 @@ export async function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(
         treeView,
         treeView.onDidExpandElement(e => {
-            treeProvider.setExpanded(e.element.task.id, true);
+            treeProvider.setExpanded(e.element.id!, true);
         }),
         treeView.onDidCollapseElement(e => {
-            treeProvider.setExpanded(e.element.task.id, false);
+            treeProvider.setExpanded(e.element.id!, false);
         })
     );
+
+    const getSelectedNode = (node: TaskTreeItem | undefined): TaskTreeItem | undefined => {
+        if (node) return node;
+        if (treeView.selection && treeView.selection.length > 0) {
+            return treeView.selection[0];
+        }
+        return undefined;
+    };
 
     // 2. Command Registration (Early)
     context.subscriptions.push(
@@ -50,8 +58,13 @@ export async function activate(context: vscode.ExtensionContext) {
             if (!taskManager) {
                 return;
             }
+            const target = getSelectedNode(node);
+            if (!target) {
+                vscode.window.showWarningMessage("No task or project selected in the Sidebar.");
+                return;
+            }
             try {
-                await taskManager.activateTask(node.task.id, node.task.parentTaskId);
+                await taskManager.activateTask(target.task.id, target.task.parentTaskId);
             } catch (error) {
                 const msg = `Failed to activate task: ${error instanceof Error ? error.message : String(error)}`;
                 outputChannel.appendLine(msg);
@@ -66,8 +79,13 @@ export async function activate(context: vscode.ExtensionContext) {
             if (!taskManager) {
                 return;
             }
+            const target = getSelectedNode(node);
+            if (!target) {
+                vscode.window.showWarningMessage("No task or project selected in the Sidebar.");
+                return;
+            }
             try {
-                await taskManager.start_task(node.task.id, node.task.parentTaskId);
+                await taskManager.start_task(target.task.id, target.task.parentTaskId);
             } catch (error) {
                 const msg = `Failed to start task: ${error instanceof Error ? error.message : String(error)}`;
                 outputChannel.appendLine(msg);
@@ -78,8 +96,13 @@ export async function activate(context: vscode.ExtensionContext) {
             if (!taskManager) {
                 return;
             }
+            const target = getSelectedNode(node);
+            if (!target) {
+                vscode.window.showWarningMessage("No task or project selected in the Sidebar.");
+                return;
+            }
             try {
-                await taskManager.close_task(node.task.id, node.task.parentTaskId);
+                await taskManager.close_task(target.task.id, target.task.parentTaskId);
             } catch (error) {
                 const msg = `Failed to close task: ${error instanceof Error ? error.message : String(error)}`;
                 outputChannel.appendLine(msg);
@@ -90,8 +113,13 @@ export async function activate(context: vscode.ExtensionContext) {
             if (!taskManager) {
                 return;
             }
+            const target = getSelectedNode(node);
+            if (!target) {
+                vscode.window.showWarningMessage("No task or project selected in the Sidebar.");
+                return;
+            }
             try {
-                await taskManager.promoteTaskToProject(node.task.id);
+                await taskManager.promoteTaskToProject(target.task.id);
             } catch (error) {
                 const msg = `Failed to promote task to project: ${error instanceof Error ? error.message : String(error)}`;
                 outputChannel.appendLine(msg);
@@ -150,9 +178,14 @@ export async function activate(context: vscode.ExtensionContext) {
                 vscode.window.showWarningMessage('Artifact service not initialized. Please ensure a workspace is open.');
                 return;
             }
+            const target = getSelectedNode(node);
+            if (!target) {
+                vscode.window.showWarningMessage("No task or project selected in the Sidebar.");
+                return;
+            }
             try {
-                const taskId = node.task.id;
-                const parentTaskId = node.task.parentTaskId;
+                const taskId = target.task.id;
+                const parentTaskId = target.task.parentTaskId;
                 const artifacts = artifactService.listArtifacts(taskId, parentTaskId);
                 const detailsArtifact = artifacts.find(a => a.type.id === 'task-details');
 
@@ -208,7 +241,8 @@ export async function activate(context: vscode.ExtensionContext) {
             const taskUpdateSubscription = taskManager.onDidUpdateTask(async (data) => {
                 treeProvider.refresh();
                 if (data.event === TaskEventType.Activated) {
-                    const item = await treeProvider.getItemForId(data.taskId);
+                    const activeTask = taskManager?.getActiveTask();
+                    const item = await treeProvider.getItemForId(data.taskId, activeTask?.parentTaskId);
                     if (item) {
                         setTimeout(() => {
                             treeView.reveal(item, { select: true, focus: true, expand: true });
