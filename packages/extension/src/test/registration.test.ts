@@ -30,6 +30,9 @@ suite('Registration Contract Tests', () => {
 
         assert.ok(expectedCommands.length > 0, 'No commands found in package.json to verify');
 
+        // Small delay to ensure extension is fully activated
+        await new Promise(resolve => setTimeout(resolve, 500));
+
         const allCommands = await vscode.commands.getCommands(true);
         for (const cmd of expectedCommands) {
             assert.ok(allCommands.includes(cmd), `Command '${cmd}' defined in package.json is not registered in the extension`);

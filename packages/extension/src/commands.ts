@@ -129,7 +129,7 @@ export function registerCommands(
             const result = await TasklistWizard.run(taskManager, target.task.id);
             if (result) {
                 setTimeout(async () => {
-                    const item = await treeProvider.getItemForId(result.id);
+                    const item = await treeProvider.getItemForId(result.id, result.parentTaskId);
                     if (item) {
                         treeView.reveal(item, { select: true, focus: true, expand: true });
                     }
@@ -158,7 +158,7 @@ export function registerCommands(
                     const result = await TasklistWizard.run(taskManager, parentTaskId);
                     if (result) {
                         setTimeout(async () => {
-                            const item = await treeProvider.getItemForId(result.id);
+                            const item = await treeProvider.getItemForId(result.id, result.parentTaskId);
                             if (item) {
                                 treeView.reveal(item, { select: true, focus: true, expand: true });
                             }

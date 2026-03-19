@@ -67,7 +67,7 @@ suite('TaskTreeProvider Logic', () => {
         test('active task has :active suffix in contextValue', () => {
             const entry = manager.createTask('active-task');
             const item = new TaskTreeItem(entry, true);
-            assert.strictEqual(item.id, 'active-task');
+            assert.strictEqual(item.id, 'root::active-task');
             assert.strictEqual(item.contextValue, 'task:open:active');
         });
 
