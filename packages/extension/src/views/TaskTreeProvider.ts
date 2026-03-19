@@ -29,10 +29,12 @@ export class TaskTreeProvider implements vscode.TreeDataProvider<TaskTreeItem>, 
     }
 
     /**
-     * Records the expansion state (Placeholder for compatibility, no longer needed for manual tracking).
+     * Records the expansion state and refreshes the item to update its icon.
      */
-    setExpanded(_itemId: string, _expanded: boolean): void {
-        // We now rely on VS Code's native expansion state and 'reveal' for active paths.
+    setExpanded(item: TaskTreeItem, _expanded: boolean): void {
+        // VS Code already updated item.collapsibleState.
+        // We just need to trigger a refresh so getTreeItem is called and icons update.
+        this.refresh(item);
     }
 
     dispose(): void {
@@ -40,6 +42,7 @@ export class TaskTreeProvider implements vscode.TreeDataProvider<TaskTreeItem>, 
     }
 
     getTreeItem(element: TaskTreeItem): vscode.TreeItem {
+        element.updateIcon();
         return element;
     }
 

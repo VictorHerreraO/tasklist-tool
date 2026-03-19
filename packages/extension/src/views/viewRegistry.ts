@@ -13,10 +13,10 @@ export function registerViews(context: vscode.ExtensionContext, treeProvider: Ta
     context.subscriptions.push(
         treeView,
         treeView.onDidExpandElement(e => {
-            treeProvider.setExpanded(e.element.id!, true);
+            treeProvider.setExpanded(e.element, true);
         }),
         treeView.onDidCollapseElement(e => {
-            treeProvider.setExpanded(e.element.id!, false);
+            treeProvider.setExpanded(e.element, false);
         })
     );
 
