@@ -195,7 +195,7 @@ export class TaskTreeItem extends vscode.TreeItem {
         tooltip.appendMarkdown(`*Click to open details*`);
         this.tooltip = tooltip;
 
-        this.contextValue = `${this.task.type}${this.task.parentTaskId ? ':subtask' : ''}:${this.task.status}${this.isActive ? ':active' : ''}`;
+        this.contextValue = this.computeContextValue();
 
         this.command = {
             command: 'tasklist.openTaskDetails',
@@ -204,6 +204,15 @@ export class TaskTreeItem extends vscode.TreeItem {
         };
         
         this.updateIcon();
+    }
+
+    private computeContextValue(): string {
+        const type = this.task.type;
+        const subtask = this.task.parentTaskId ? ':subtask' : '';
+        const status = this.task.status;
+        const active = this.isActive ? ':active' : '';
+
+        return `${type}${subtask}:${status}${active}`;
     }
 
     public updateIcon(): void {
