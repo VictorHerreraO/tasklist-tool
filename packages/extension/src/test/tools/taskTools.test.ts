@@ -12,7 +12,7 @@ import { StartTaskTool } from '../../tools/startTaskTool.js';
 import { CloseTaskTool } from '../../tools/closeTaskTool.js';
 import { IListTasksParams, ICreateTaskParams, ITaskIdParams } from '../../tools/interfaces.js';
 import { PromoteToProjectTool } from '../../tools/promoteToProjectTool.js';
-import { TaskTreeProvider } from '../../views/TaskTreeProvider.js';
+import { TaskTreeProvider, TaskTreeItem } from '../../views/TaskTreeProvider.js';
 
 
 
@@ -905,14 +905,15 @@ suite('Task Management Tools', () => {
 
             // 4. Verify Tree View compatibility
             const rootItems = await treeProvider.getChildren();
-            const projectItem = rootItems.find(item => item.task.id === 'proj-1');
+            const projectItem = rootItems.find(item => item instanceof TaskTreeItem && item.task.id === 'proj-1') as TaskTreeItem;
             assert.ok(projectItem, 'Project should be in root tree items');
             assert.strictEqual(projectItem?.collapsibleState, vscode.TreeItemCollapsibleState.Collapsed, 'Project should be expandable');
 
             const subItems = await treeProvider.getChildren(projectItem);
             assert.strictEqual(subItems.length, 1);
-            assert.strictEqual(subItems[0].task.id, 'sub-1');
-            assert.strictEqual(subItems[0].collapsibleState, vscode.TreeItemCollapsibleState.None, 'Task should be a leaf node');
+            assert.ok(subItems[0] instanceof TaskTreeItem);
+            assert.strictEqual((subItems[0] as TaskTreeItem).task.id, 'sub-1');
+            assert.strictEqual(subItems[0].collapsibleState, vscode.TreeItemCollapsibleState.Collapsed, 'Task should be expandable');
         });
     });
 });

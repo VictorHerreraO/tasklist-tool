@@ -3,18 +3,38 @@ import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 import * as vscode from 'vscode';
-import { TaskManager } from '@tasklist/core';
-import { TaskTreeProvider, TaskTreeItem } from '../../views/TaskTreeProvider';
+import { TaskManager, ArtifactRegistry, ArtifactService } from '@tasklist/core';
+import { TaskTreeProvider, TaskTreeItem, ArtifactTreeItem } from '../../views/TaskTreeProvider';
 
 suite('TaskTreeProvider Logic', () => {
     let workspaceRoot: string;
     let manager: TaskManager;
     let provider: TaskTreeProvider;
+    let artifactService: ArtifactService;
+    let registry: ArtifactRegistry;
 
-    setup(() => {
+    setup(async () => {
         workspaceRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'tasklist-provider-test-'));
         manager = new TaskManager(workspaceRoot);
-        provider = new TaskTreeProvider(manager);
+        
+        const extensionRoot = path.join(workspaceRoot, 'ext-root');
+        const templateDir = path.join(extensionRoot, 'templates');
+        fs.mkdirSync(templateDir, { recursive: true });
+        fs.writeFileSync(path.join(templateDir, 'task-details.ai.md'), `---
+id: task-details
+displayName: Task Details
+description: Technical details and context for a task.
+filename: task-details.ai.md
+---
+# Task Details
+
+Template`);
+        
+        registry = new ArtifactRegistry(extensionRoot, workspaceRoot);
+        registry.initialize();
+        artifactService = new ArtifactService(workspaceRoot, manager, registry);
+        
+        provider = new TaskTreeProvider(manager, artifactService);
     });
 
     teardown(() => {
@@ -36,8 +56,9 @@ suite('TaskTreeProvider Logic', () => {
         const parentItem = await provider.getParent(subItem);
 
         assert.ok(parentItem, 'Parent should be found');
-        assert.strictEqual(parentItem!.task.id, 'my-project');
-        assert.strictEqual(parentItem!.task.type, 'project');
+        assert.ok(parentItem instanceof TaskTreeItem);
+        assert.strictEqual(parentItem.task.id, 'my-project');
+        assert.strictEqual(parentItem.task.type, 'project');
     });
 
     test('getItemForId returns the correct item', async () => {
@@ -45,7 +66,8 @@ suite('TaskTreeProvider Logic', () => {
         const item = await provider.getItemForId('target-task');
 
         assert.ok(item, 'Item should be found');
-        assert.strictEqual(item!.task.id, 'target-task');
+        assert.ok(item instanceof TaskTreeItem);
+        assert.strictEqual(item.task.id, 'target-task');
     });
 
     test('getItemForId returns undefined for non-existent taskId', async () => {
@@ -67,7 +89,7 @@ suite('TaskTreeProvider Logic', () => {
         test('active task has :active suffix in contextValue', () => {
             const entry = manager.createTask('active-task');
             const item = new TaskTreeItem(entry, true);
-            assert.strictEqual(item.id, 'root::active-task');
+            assert.strictEqual(item.id, 'root::active-task::task');
             assert.strictEqual(item.contextValue, 'task:open:active');
         });
 
@@ -169,8 +191,10 @@ suite('TaskTreeProvider Logic', () => {
             manager.createTask('a-proj', 'project');
 
             const children = await provider.getChildren();
-            assert.strictEqual(children[0].task.id, 'a-proj');
-            assert.strictEqual(children[1].task.id, 'z-task');
+            assert.ok(children[0] instanceof TaskTreeItem);
+            assert.ok(children[1] instanceof TaskTreeItem);
+            assert.strictEqual((children[0] as TaskTreeItem).task.id, 'a-proj');
+            assert.strictEqual((children[1] as TaskTreeItem).task.id, 'z-task');
         });
 
         test('sortTasks uses natural numeric sorting for IDs', async () => {
@@ -179,9 +203,84 @@ suite('TaskTreeProvider Logic', () => {
             manager.createTask('task-1', 'task');
 
             const children = await provider.getChildren();
-            assert.strictEqual(children[0].task.id, 'task-1');
-            assert.strictEqual(children[1].task.id, 'task-2');
-            assert.strictEqual(children[2].task.id, 'task-10');
+            assert.ok(children[0] instanceof TaskTreeItem);
+            assert.ok(children[1] instanceof TaskTreeItem);
+            assert.ok(children[2] instanceof TaskTreeItem);
+            assert.strictEqual((children[0] as TaskTreeItem).task.id, 'task-1');
+            assert.strictEqual((children[1] as TaskTreeItem).task.id, 'task-2');
+            assert.strictEqual((children[2] as TaskTreeItem).task.id, 'task-10');
+        });
+    });
+
+    suite('Artifact Resolution & Stability', () => {
+        test('Task without artifacts is expandable by default', async () => {
+            manager.createTask('no-artifacts');
+            const item = await provider.getItemForId('no-artifacts');
+            // Tasks are now always expandable for consistency
+            assert.strictEqual(item?.collapsibleState, vscode.TreeItemCollapsibleState.Collapsed);
+        });
+
+        test('Task with artifacts becomes expandable', async () => {
+            manager.createTask('with-artifacts');
+            artifactService.updateArtifact('with-artifacts', 'task-details', '# Details');
+            
+            const item = await provider.getItemForId('with-artifacts');
+            assert.strictEqual(item?.collapsibleState, vscode.TreeItemCollapsibleState.Collapsed);
+        });
+
+        test('getChildren returns artifacts for a task', async () => {
+            manager.createTask('task-1');
+            artifactService.updateArtifact('task-1', 'task-details', '# Details');
+            
+            const taskItem = await provider.getItemForId('task-1');
+            const children = await provider.getChildren(taskItem);
+            
+            const artifacts = children.filter(c => c instanceof ArtifactTreeItem);
+            assert.strictEqual(artifacts.length, 1);
+            assert.strictEqual((artifacts[0] as ArtifactTreeItem).label, 'Task Details');
+        });
+
+        test('Artifacts have correct stable composite IDs', async () => {
+            manager.createTask('task-1');
+            artifactService.updateArtifact('task-1', 'task-details', '# Details');
+            
+            const taskItem = await provider.getItemForId('task-1');
+            const children = await provider.getChildren(taskItem);
+            const artifact = children.find(c => c instanceof ArtifactTreeItem) as ArtifactTreeItem;
+            
+            assert.strictEqual(artifact.id, 'task-1::task-details::artifact');
+        });
+
+        test('Artifacts have correct descriptions based on parent type', async () => {
+            manager.createTask('proj-1', 'project');
+            manager.createTask('task-1', 'task');
+            artifactService.updateArtifact('proj-1', 'task-details', '# Proj');
+            artifactService.updateArtifact('task-1', 'task-details', '# Task');
+
+            const projItem = await provider.getItemForId('proj-1');
+            const taskItem = await provider.getItemForId('task-1');
+
+            const projChildren = await provider.getChildren(projItem);
+            const taskChildren = await provider.getChildren(taskItem);
+
+            const projArtifact = projChildren.find(c => c instanceof ArtifactTreeItem) as ArtifactTreeItem;
+            const taskArtifact = taskChildren.find(c => c instanceof ArtifactTreeItem) as ArtifactTreeItem;
+
+            assert.strictEqual(projArtifact.description, 'Project');
+            assert.strictEqual(taskArtifact.description, undefined);
+        });
+
+        test('Mixed children: subtasks come before artifacts', async () => {
+            manager.createTask('proj', 'project');
+            manager.createTask('sub-1', 'task', 'proj');
+            artifactService.updateArtifact('proj', 'task-details', '# Details');
+            
+            const projItem = await provider.getItemForId('proj');
+            const children = await provider.getChildren(projItem);
+            
+            assert.strictEqual(children.length, 2);
+            assert.ok(children[0] instanceof TaskTreeItem, 'First child should be a task');
+            assert.ok(children[1] instanceof ArtifactTreeItem, 'Second child should be an artifact');
         });
     });
 });

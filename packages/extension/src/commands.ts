@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { TaskManager, ArtifactService } from '@tasklist/core';
-import { TaskTreeProvider, TaskTreeItem } from './views/TaskTreeProvider.js';
+import { TaskTreeProvider, TaskTreeItem, ArtifactTreeItem } from './views/TaskTreeProvider.js';
 import { TasklistWizard } from './views/TasklistWizard.js';
 
 /**
@@ -9,13 +9,13 @@ import { TasklistWizard } from './views/TasklistWizard.js';
 export function registerCommands(
     context: vscode.ExtensionContext,
     treeProvider: TaskTreeProvider,
-    treeView: vscode.TreeView<TaskTreeItem>,
+    treeView: vscode.TreeView<TaskTreeItem | ArtifactTreeItem>,
     outputChannel: vscode.OutputChannel,
     getTaskManager: () => TaskManager | undefined,
     getArtifactService: () => ArtifactService | undefined
 ): void {
 
-    const getSelectedNode = (node: TaskTreeItem | undefined): TaskTreeItem | undefined => {
+    const getSelectedNode = (node: TaskTreeItem | ArtifactTreeItem | undefined): TaskTreeItem | ArtifactTreeItem | undefined => {
         if (node) {
             return node;
         }
@@ -26,14 +26,14 @@ export function registerCommands(
     };
 
     context.subscriptions.push(
-        vscode.commands.registerCommand('tasklist.activateTask', async (node: TaskTreeItem) => {
+        vscode.commands.registerCommand('tasklist.activateTask', async (node: TaskTreeItem | ArtifactTreeItem) => {
             const taskManager = getTaskManager();
             if (!taskManager) {
                 return;
             }
 
             const target = getSelectedNode(node);
-            if (!target) {
+            if (!target || !(target instanceof TaskTreeItem)) {
                 vscode.window.showWarningMessage("No task or project selected in the Sidebar.");
                 return;
             }
@@ -50,14 +50,14 @@ export function registerCommands(
             treeProvider.refresh();
         }),
 
-        vscode.commands.registerCommand('tasklist.startTask', async (node: TaskTreeItem) => {
+        vscode.commands.registerCommand('tasklist.startTask', async (node: TaskTreeItem | ArtifactTreeItem) => {
             const taskManager = getTaskManager();
             if (!taskManager) {
                 return;
             }
 
             const target = getSelectedNode(node);
-            if (!target) {
+            if (!target || !(target instanceof TaskTreeItem)) {
                 vscode.window.showWarningMessage("No task or project selected in the Sidebar.");
                 return;
             }
@@ -70,14 +70,14 @@ export function registerCommands(
             }
         }),
 
-        vscode.commands.registerCommand('tasklist.closeTask', async (node: TaskTreeItem) => {
+        vscode.commands.registerCommand('tasklist.closeTask', async (node: TaskTreeItem | ArtifactTreeItem) => {
             const taskManager = getTaskManager();
             if (!taskManager) {
                 return;
             }
 
             const target = getSelectedNode(node);
-            if (!target) {
+            if (!target || !(target instanceof TaskTreeItem)) {
                 vscode.window.showWarningMessage("No task or project selected in the Sidebar.");
                 return;
             }
@@ -90,14 +90,14 @@ export function registerCommands(
             }
         }),
 
-        vscode.commands.registerCommand('tasklist.promoteTask', async (node: TaskTreeItem) => {
+        vscode.commands.registerCommand('tasklist.promoteTask', async (node: TaskTreeItem | ArtifactTreeItem) => {
             const taskManager = getTaskManager();
             if (!taskManager) {
                 return;
             }
 
             const target = getSelectedNode(node);
-            if (!target) {
+            if (!target || !(target instanceof TaskTreeItem)) {
                 vscode.window.showWarningMessage("No task or project selected in the Sidebar.");
                 return;
             }
@@ -110,14 +110,14 @@ export function registerCommands(
             }
         }),
 
-        vscode.commands.registerCommand('tasklist.addSubtask', async (node: TaskTreeItem) => {
+        vscode.commands.registerCommand('tasklist.addSubtask', async (node: TaskTreeItem | ArtifactTreeItem) => {
             const taskManager = getTaskManager();
             if (!taskManager) {
                 return;
             }
 
             const target = getSelectedNode(node);
-            if (!target) {
+            if (!target || !(target instanceof TaskTreeItem)) {
                 vscode.window.showWarningMessage("No project selected in the Sidebar.");
                 return;
             }
@@ -139,7 +139,7 @@ export function registerCommands(
 
         vscode.commands.registerCommand('tasklist.createTask', async (args?: unknown) => {
             const taskManager = getTaskManager();
-            if (args instanceof TaskTreeItem || (args && typeof args === 'object' && 'task' in args)) {
+            if (args instanceof TaskTreeItem || args instanceof ArtifactTreeItem || (args && typeof args === 'object' && 'task' in args)) {
                 args = undefined;
             }
 
@@ -188,7 +188,7 @@ export function registerCommands(
             }
         }),
 
-        vscode.commands.registerCommand('tasklist.openTaskDetails', async (node: TaskTreeItem) => {
+        vscode.commands.registerCommand('tasklist.openTaskDetails', async (node: TaskTreeItem | ArtifactTreeItem | { id: string; parentTaskId?: string }) => {
             const artifactService = getArtifactService();
             const taskManager = getTaskManager();
             if (!artifactService || !taskManager) {
@@ -197,34 +197,51 @@ export function registerCommands(
                 return;
             }
 
-            const target = getSelectedNode(node);
-            if (!target) {
+            let taskId: string | undefined;
+            let parentTaskId: string | undefined;
+
+            if (node instanceof TaskTreeItem) {
+                taskId = node.task.id;
+                parentTaskId = node.task.parentTaskId;
+            } else if (node && typeof node === 'object' && 'id' in node) {
+                taskId = node.id;
+                parentTaskId = node.parentTaskId;
+            } else {
+                const target = getSelectedNode(node as TaskTreeItem | ArtifactTreeItem | undefined);
+                if (target instanceof TaskTreeItem) {
+                    taskId = target.task.id;
+                    parentTaskId = target.task.parentTaskId;
+                }
+            }
+
+            if (!taskId) {
                 vscode.window.showWarningMessage("No task or project selected in the Sidebar.");
                 return;
             }
 
             try {
-                const taskId = target.task.id;
-                const parentTaskId = target.task.parentTaskId;
                 const artifacts = artifactService.listArtifacts(taskId, parentTaskId);
                 const detailsArtifact = artifacts.find(a => a.type.id === 'task-details');
 
-                if (detailsArtifact?.exists) {
-                    const doc = await vscode.workspace.openTextDocument(vscode.Uri.file(detailsArtifact.path));
-                    await vscode.window.showTextDocument(doc);
-                } else {
-                    const selection = await vscode.window.showInformationMessage(
-                        `Task details for '${taskId}' do not exist. Would you like to create them from the template?`,
-                        'Create',
-                        'Cancel'
-                    );
+                if (detailsArtifact) {
+                    if (!detailsArtifact.exists) {
+                        const selection = await vscode.window.showInformationMessage(
+                            `Task details for '${taskId}' do not exist. Would you like to create them from the template?`,
+                            'Create',
+                            'Cancel'
+                        );
 
-                    if (selection === 'Create') {
+                        if (selection !== 'Create') {
+                            return;
+                        }
+
                         const content = artifactService.getArtifact(taskId, 'task-details', parentTaskId);
                         artifactService.updateArtifact(taskId, 'task-details', content, parentTaskId);
-                        const doc = await vscode.workspace.openTextDocument(vscode.Uri.file(detailsArtifact!.path));
-                        await vscode.window.showTextDocument(doc);
+                        // Refresh tree to show the new artifact
+                        treeProvider.refresh();
                     }
+                    const doc = await vscode.workspace.openTextDocument(vscode.Uri.file(detailsArtifact.path));
+                    await vscode.window.showTextDocument(doc);
                 }
             } catch (error) {
                 const msg = `Failed to open task details: ${error instanceof Error ? error.message : String(error)}`;

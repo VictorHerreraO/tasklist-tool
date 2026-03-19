@@ -1,10 +1,10 @@
 import * as vscode from 'vscode';
-import { TaskTreeProvider, TaskTreeItem } from './TaskTreeProvider.js';
+import { TaskTreeProvider, TaskTreeItem, ArtifactTreeItem } from './TaskTreeProvider.js';
 
 /**
  * Handles the registration and event management for the extension's Tree Views.
  */
-export function registerViews(context: vscode.ExtensionContext, treeProvider: TaskTreeProvider): vscode.TreeView<TaskTreeItem> {
+export function registerViews(context: vscode.ExtensionContext, treeProvider: TaskTreeProvider): vscode.TreeView<TaskTreeItem | ArtifactTreeItem> {
     const treeView = vscode.window.createTreeView('tasklist-tree', {
         treeDataProvider: treeProvider,
         showCollapseAll: true

@@ -55,7 +55,7 @@ export async function activate(context: vscode.ExtensionContext) {
             await registry.initialize();
             artifactService = new ArtifactService(workspaceRoot, taskManager, registry);
 
-            treeProvider.setTaskManager(taskManager);
+            treeProvider.setTaskManager(taskManager, artifactService);
 
             // Subscribe to task updates
             const taskUpdateSubscription = taskManager.onDidUpdateTask(async (data) => {

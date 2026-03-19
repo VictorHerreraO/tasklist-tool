@@ -259,8 +259,8 @@ suite('Integration – Artifact Lifecycle', () => {
                         assert.ok(err.message.includes('open-task'), err.message);
                         assert.ok(err.message.includes('open'), err.message);
                         assert.ok(
-                            err.message.includes('start_task'),
-                            `Expected 'start_task' hint in: "${err.message}"`
+                            err.message.includes('startTask'),
+                            `Expected 'startTask' hint in: "${err.message}"`
                         );
                         return true;
                     }
