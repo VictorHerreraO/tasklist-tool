@@ -216,7 +216,7 @@ export class TaskTreeItem extends vscode.TreeItem {
     }
 
     public updateIcon(): void {
-        const color = this.isActive ? new vscode.ThemeColor('list.activeSelectionForeground') : undefined;
+        const color = this.isActive ? new vscode.ThemeColor('progressBar.background') : undefined;
         let iconId: string;
 
         if (this.task.type === 'project') {

@@ -87,12 +87,12 @@ suite('TaskTreeProvider Logic', () => {
             assert.strictEqual(icon.id, 'loading~spin');
         });
 
-        test('active items use list.activeSelectionForeground color', () => {
+        test('active items use progressBar.background color', () => {
             const entry = manager.createTask('active-item');
             const item = new TaskTreeItem(entry, true);
             const icon = item.iconPath as vscode.ThemeIcon;
             assert.ok(icon.color, 'Active icon should have a color');
-            assert.strictEqual((icon.color as vscode.ThemeColor).id, 'list.activeSelectionForeground');
+            assert.strictEqual((icon.color as vscode.ThemeColor).id, 'progressBar.background');
         });
 
         test('active in-progress task has unified loading~spin icon with color', () => {
@@ -105,7 +105,7 @@ suite('TaskTreeProvider Logic', () => {
             
             // Refinement: no longer uses 'star-full'
             assert.strictEqual(icon.id, 'loading~spin');
-            assert.strictEqual((icon.color as vscode.ThemeColor).id, 'list.activeSelectionForeground');
+            assert.strictEqual((icon.color as vscode.ThemeColor).id, 'progressBar.background');
         });
 
         test('active open task has unified circle icon with color', () => {
@@ -117,7 +117,7 @@ suite('TaskTreeProvider Logic', () => {
             
             // Refinement: no longer uses 'star'
             assert.strictEqual(icon.id, 'circle-large-outline');
-            assert.strictEqual((icon.color as vscode.ThemeColor).id, 'list.activeSelectionForeground');
+            assert.strictEqual((icon.color as vscode.ThemeColor).id, 'progressBar.background');
         });
 
         test('project has folder icon when collapsed', () => {
@@ -149,7 +149,7 @@ suite('TaskTreeProvider Logic', () => {
             
             // Refinement: no longer uses 'root-folder'
             assert.strictEqual(icon.id, 'folder');
-            assert.strictEqual((icon.color as vscode.ThemeColor).id, 'list.activeSelectionForeground');
+            assert.strictEqual((icon.color as vscode.ThemeColor).id, 'progressBar.background');
         });
 
         test('tooltip contains Markdown with task metadata', () => {
