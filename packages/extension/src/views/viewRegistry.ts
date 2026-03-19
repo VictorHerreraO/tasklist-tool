@@ -13,9 +13,11 @@ export function registerViews(context: vscode.ExtensionContext, treeProvider: Ta
     context.subscriptions.push(
         treeView,
         treeView.onDidExpandElement(e => {
+            e.element.collapsibleState = vscode.TreeItemCollapsibleState.Expanded;
             treeProvider.setExpanded(e.element, true);
         }),
         treeView.onDidCollapseElement(e => {
+            e.element.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
             treeProvider.setExpanded(e.element, false);
         })
     );
