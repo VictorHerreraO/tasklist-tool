@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { TaskManager } from '@tasklist/core';
 import { ITaskIdParams } from './interfaces.js';
+import { mapToolError } from './toolUtils.js';
 
 /**
  * Language model tool that transitions a task from `in-progress` to `closed`.
@@ -70,14 +71,6 @@ export class CloseTaskTool implements vscode.LanguageModelTool<ITaskIdParams> {
             ]);
         } catch (err: unknown) {
             const message = err instanceof Error ? err.message : String(err);
-
-            if (message.includes('not found')) {
-                throw new Error(
-                    `Cannot close task '${taskId}': task not found. ` +
-                    `AI Agent might have forgot to provide a parent project id. ` +
-                    `Use 'list_tasks' to see available tasks, then retry with a valid taskId and parentTaskId if applicable.`
-                );
-            }
             if (message.includes('expected \'in-progress\'')) {
                 throw new Error(
                     `Cannot close task '${taskId}': ${message} ` +
@@ -85,10 +78,7 @@ export class CloseTaskTool implements vscode.LanguageModelTool<ITaskIdParams> {
                     `If the task is 'open', call 'start_task' first.`
                 );
             }
-            throw new Error(
-                `Failed to close task '${taskId}': ${message}. ` +
-                `Verify the taskId is correct and the workspace index is accessible.`
-            );
+            throw mapToolError(err, taskId, 'close task');
         }
     }
 }

@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { TaskManager, ArtifactService } from '@tasklist/core';
 import { IUpdateArtifactParams } from './interfaces.js';
+import { resolveTaskContext, mapToolError } from './toolUtils.js';
 
 /**
  * Language model tool that creates or overwrites an artifact file for a task.
@@ -30,28 +31,6 @@ export class UpdateArtifactTool implements vscode.LanguageModelTool<IUpdateArtif
     constructor(taskManager: TaskManager, artifactService: ArtifactService) {
         this.taskManager = taskManager;
         this.artifactService = artifactService;
-    }
-
-    /**
-     * Resolves the effective task context from explicit input or the active task.
-     *
-     * @param taskId - The optional task ID from the tool input.
-     * @param parentTaskId - The optional parent task ID from the tool input.
-     * @returns The resolved task ID and optional parentTaskId.
-     * @throws {Error} If no taskId is supplied and no task is currently active.
-     */
-    private resolveTaskContext(taskId?: string, parentTaskId?: string): { taskId: string; parentTaskId?: string } {
-        if (taskId) {
-            return { taskId, parentTaskId };
-        }
-        const active = this.taskManager.getActiveTask();
-        if (!active) {
-            throw new Error(
-                'No taskId was provided and there is no currently active task. ' +
-                'Pass an explicit taskId or activate a task first using `activate_task`.'
-            );
-        }
-        return { taskId: active.id, parentTaskId: active.parentTaskId };
     }
 
     /**
@@ -94,7 +73,7 @@ export class UpdateArtifactTool implements vscode.LanguageModelTool<IUpdateArtif
         _token: vscode.CancellationToken
     ): Promise<vscode.LanguageModelToolResult> {
         const { artifactType, content } = options.input;
-        const { taskId, parentTaskId } = this.resolveTaskContext(options.input.taskId, options.input.parentTaskId);
+        const { taskId, parentTaskId } = resolveTaskContext(this.taskManager, options.input.taskId, options.input.parentTaskId);
 
         try {
             this.artifactService.updateArtifact(taskId, artifactType, content, parentTaskId);
@@ -105,24 +84,13 @@ export class UpdateArtifactTool implements vscode.LanguageModelTool<IUpdateArtif
             ]);
         } catch (err: unknown) {
             const message = err instanceof Error ? err.message : String(err);
-
-            if (message.includes('not found')) {
-                throw new Error(
-                    `Cannot update artifact: task '${taskId}' not found. ` +
-                    `AI Agent might have forgot to provide a parent project id. ` +
-                    `Use 'list_tasks' to find valid task IDs or 'create_task' to create a new one.`
-                );
-            }
             if (message.includes('Unknown artifact type')) {
                 throw new Error(
                     `Unknown artifact type '${artifactType}'. ` +
                     `Use 'list_artifact_types' to see valid types, then retry with a correct artifactType.`
                 );
             }
-            throw new Error(
-                `Failed to update artifact '${artifactType}' for task '${taskId}': ${message}. ` +
-                `Ensure the workspace is writable and the task and artifact type both exist.`
-            );
+            throw mapToolError(err, taskId, `update artifact '${artifactType}'`);
         }
     }
 }

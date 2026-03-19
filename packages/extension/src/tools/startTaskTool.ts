@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { TaskManager } from '@tasklist/core';
 import { ITaskIdParams } from './interfaces.js';
+import { mapToolError } from './toolUtils.js';
 
 /**
  * Language model tool that transitions a task from `open` to `in-progress`.
@@ -69,14 +70,6 @@ export class StartTaskTool implements vscode.LanguageModelTool<ITaskIdParams> {
             ]);
         } catch (err: unknown) {
             const message = err instanceof Error ? err.message : String(err);
-
-            if (message.includes('not found')) {
-                throw new Error(
-                    `Cannot start task '${taskId}': task not found. ` +
-                    `AI Agent might have forgot to provide a parent project id. ` +
-                    `Use 'list_tasks' to see available tasks, then retry with a valid taskId and parentTaskId if applicable.`
-                );
-            }
             if (message.includes('expected \'open\'')) {
                 throw new Error(
                     `Cannot start task '${taskId}': ${message} ` +
@@ -84,10 +77,7 @@ export class StartTaskTool implements vscode.LanguageModelTool<ITaskIdParams> {
                     `Use 'list_tasks' to inspect the task's current status.`
                 );
             }
-            throw new Error(
-                `Failed to start task '${taskId}': ${message}. ` +
-                `Verify the taskId is correct and the workspace index is accessible.`
-            );
+            throw mapToolError(err, taskId, 'start task');
         }
     }
 }

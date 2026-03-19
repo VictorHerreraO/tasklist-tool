@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { TaskManager, TaskStatus } from '@tasklist/core';
 import { IListTasksParams } from './interfaces.js';
+import { mapToolError } from './toolUtils.js';
 
 /**
  * Language model tool that lists tasks in the current workspace.
@@ -95,11 +96,7 @@ export class ListTasksTool implements vscode.LanguageModelTool<IListTasksParams>
                 ),
             ]);
         } catch (err: unknown) {
-            const message = err instanceof Error ? err.message : String(err);
-            throw new Error(
-                `Failed to list tasks: ${message}. ` +
-                `Check that the workspace root is accessible and the task index is valid.`
-            );
+            throw mapToolError(err, parentTaskId || 'root', 'list tasks');
         }
     }
 }

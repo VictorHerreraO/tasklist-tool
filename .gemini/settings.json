@@ -1,0 +1,10 @@
+{
+    "mcpServers": {
+        "tasklist": {
+            "command": "tasklist-mcp",
+            "env": {
+                "TASKLIST_WORKSPACE": "/Users/victor.herrera/Workspace/tasklist-tool"
+            }
+        }
+    }
+}

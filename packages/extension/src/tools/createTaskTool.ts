@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { TaskManager } from '@tasklist/core';
 import { ICreateTaskParams } from './interfaces.js';
+import { mapToolError } from './toolUtils.js';
 
 /**
  * Language model tool that creates a new task in the current workspace.
@@ -77,19 +78,10 @@ export class CreateTaskTool implements vscode.LanguageModelTool<ICreateTaskParam
             ]);
         } catch (err: unknown) {
             const message = err instanceof Error ? err.message : String(err);
-
-            // Surface common errors with actionable guidance.
             if (message.includes('already exists')) {
                 throw new Error(
                     `Cannot create task: ${message} ` +
                     `Choose a different taskId or use 'list_tasks' to review existing tasks.`
-                );
-            }
-            if (message.includes('not found')) {
-                throw new Error(
-                    `Cannot create subtask: parent project '${parentTaskId}' not found. ` +
-                    `AI Agent might have forgot to provide the correct parent project id. ` +
-                    `Use 'list_tasks' to see available projects.`
                 );
             }
             if (message.includes('is not a project')) {
@@ -98,11 +90,7 @@ export class CreateTaskTool implements vscode.LanguageModelTool<ICreateTaskParam
                     `Please ensure you provide the correct ID of an existing project. Use 'list_tasks' to see available projects.`
                 );
             }
-
-            throw new Error(
-                `Failed to create task '${taskId}': ${message}. ` +
-                `Ensure the workspace root is writable and the parameters are valid.`
-            );
+            throw mapToolError(err, parentTaskId || taskId, 'create task');
         }
     }
 }
