@@ -61,8 +61,7 @@ export async function activate(context: vscode.ExtensionContext) {
             const taskUpdateSubscription = taskManager.onDidUpdateTask(async (data) => {
                 treeProvider.refresh();
                 if (data.event === TaskEventType.Activated) {
-                    const activeTask = taskManager?.getActiveTask();
-                    const item = await treeProvider.getItemForId(data.taskId, activeTask?.parentTaskId);
+                    const item = await treeProvider.getItemForId(data.taskId);
                     if (item) {
                         setTimeout(() => {
                             treeView.reveal(item, { select: true, focus: true, expand: true });

@@ -74,20 +74,15 @@ export class TaskTreeProvider implements vscode.TreeDataProvider<TaskTreeItem>, 
      * Helper to centralize TreeItem creation and state calculation.
      */
     private createTreeItem(task: TaskEntry): TaskTreeItem {
-        const compositeId = this.getCompositeId(task);
-        const isActive = this._activePath.has(compositeId);
+        const taskId = task.id;
+        const isActive = this._activePath.has(taskId);
         
         // We use Expanded for active project paths, but let VS Code handle the rest.
-        // Once revealed/expanded, VS Code remembers the state until refresh.
         const state = task.type === 'project'
             ? (isActive ? vscode.TreeItemCollapsibleState.Expanded : vscode.TreeItemCollapsibleState.Collapsed)
             : vscode.TreeItemCollapsibleState.None;
 
         return new TaskTreeItem(task, isActive, state);
-    }
-
-    private getCompositeId(task: TaskEntry): string {
-        return (task.parentTaskId ?? 'root') + ':' + task.id;
     }
 
     /**
@@ -105,7 +100,7 @@ export class TaskTreeProvider implements vscode.TreeDataProvider<TaskTreeItem>, 
         }
 
         // Add the active task itself
-        this._activePath.add(this.getCompositeId(activeTask));
+        this._activePath.add(activeTask.id);
 
         // Add ancestors
         let currentParentId = activeTask.parentTaskId;
@@ -114,7 +109,7 @@ export class TaskTreeProvider implements vscode.TreeDataProvider<TaskTreeItem>, 
             if (!result) {
                 break;
             }
-            this._activePath.add(this.getCompositeId(result.entry));
+            this._activePath.add(result.entry.id);
             currentParentId = result.entry.parentTaskId;
         }
     }
@@ -152,12 +147,12 @@ export class TaskTreeProvider implements vscode.TreeDataProvider<TaskTreeItem>, 
     /**
      * Helper to find a TaskTreeItem for a specific taskId.
      */
-    async getItemForId(taskId: string, parentTaskId?: string): Promise<TaskTreeItem | undefined> {
+    async getItemForId(taskId: string): Promise<TaskTreeItem | undefined> {
         if (!this.taskManager) {
             return undefined;
         }
 
-        const result = this.taskManager.findEntryGlobally(taskId, parentTaskId);
+        const result = this.taskManager.findEntryGlobally(taskId);
         if (result) {
             return this.createTreeItem(result.entry);
         }
@@ -175,7 +170,7 @@ export class TaskTreeItem extends vscode.TreeItem {
         collapsibleState: vscode.TreeItemCollapsibleState = vscode.TreeItemCollapsibleState.None
     ) {
         super(task.id, collapsibleState);
-        this.id = (task.parentTaskId ?? 'root') + ':' + task.id;
+        this.id = task.id;
 
         // Clean label, use description for active state
         if (this.isActive) {
