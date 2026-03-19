@@ -13,7 +13,7 @@ import { TaskManager, ArtifactRegistry, ArtifactService, ArtifactType } from '@t
 const EXTENSION_ROOT = path.resolve(__dirname, '../../..');
 
 /** Built-in type used throughout artifact lifecycle tests. */
-const BUILT_IN_TYPE = 'research';
+const BUILT_IN_TYPE = 'task-details';
 
 /** A second built-in type for multi-type tests. */
 const SECOND_BUILT_IN_TYPE = 'walkthrough';
@@ -55,6 +55,13 @@ suite('Integration – Artifact Lifecycle', () => {
         taskManager = new TaskManager(workspaceRoot);
         registry = new ArtifactRegistry(EXTENSION_ROOT, workspaceRoot);
         registry.initialize();
+        registry.registerType({
+            id: 'walkthrough',
+            displayName: 'Walkthrough',
+            description: 'Custom walkthrough',
+            filename: 'walkthrough.ai.md',
+            templateBody: '# Walkthrough'
+        });
         service = new ArtifactService(workspaceRoot, taskManager, registry);
     });
 

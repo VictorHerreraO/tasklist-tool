@@ -49,19 +49,14 @@ suite('ArtifactRegistry', () => {
     // ── Default built-in types ─────────────────────────────────────────────
 
     suite('default built-in types', () => {
-        test('loads exactly 6 default types after initialize()', () => {
-            assert.strictEqual(registry.getTypes().length, 6);
+        test('loads exactly 1 default types after initialize()', () => {
+            assert.strictEqual(registry.getTypes().length, 1);
         });
 
-        test('includes all 6 expected built-in type IDs', () => {
+        test('includes the expected built-in type ID', () => {
             const ids = registry.getTypes().map(t => t.id);
             const expected = [
                 'task-details',
-                'research',
-                'implementation-plan',
-                'walkthrough',
-                'review',
-                'analysis',
             ];
             for (const id of expected) {
                 assert.ok(ids.includes(id), `Missing expected built-in type: '${id}'`);
@@ -73,8 +68,8 @@ suite('ArtifactRegistry', () => {
 
     suite('getType', () => {
         test('returns the correct type for a known id', () => {
-            const type = registry.getType('research');
-            assert.strictEqual(type.id, 'research');
+            const type = registry.getType('task-details');
+            assert.strictEqual(type.id, 'task-details');
             assert.ok(type.displayName.length > 0, 'displayName should be populated');
         });
 
@@ -90,11 +85,7 @@ suite('ArtifactRegistry', () => {
 
     suite('getFilename', () => {
         test('returns correct .ai.md filename for built-in types', () => {
-            assert.strictEqual(registry.getFilename('research'), 'research.ai.md');
-            assert.strictEqual(registry.getFilename('walkthrough'), 'walkthrough.ai.md');
-            assert.strictEqual(registry.getFilename('review'), 'review.ai.md');
             assert.strictEqual(registry.getFilename('task-details'), 'task-details.ai.md');
-            assert.strictEqual(registry.getFilename('implementation-plan'), 'implementation-plan.ai.md');
         });
 
         test('throws for an unknown type id', () => {
@@ -235,37 +226,37 @@ suite('ArtifactRegistry', () => {
             registry.initialize(); // reload from disk
             const ids = registry.getTypes().map(t => t.id);
             assert.ok(ids.includes('custom-notes'), 'workspace type should be present after reload');
-            assert.ok(ids.includes('research'), 'built-in type should still be present');
+            assert.ok(ids.includes('task-details'), 'built-in type should still be present');
         });
 
         test('workspace template with same id overrides the built-in', () => {
-            const overriddenResearch: ArtifactType = {
-                id: 'research',
-                displayName: 'Custom Research Override',
-                description: 'Workspace-level research.',
-                filename: 'research.ai.md',
-                templateBody: '# My Custom Research\n\n## Findings\n',
+            const overriddenTaskDetails: ArtifactType = {
+                id: 'task-details',
+                displayName: 'Custom Task Details Override',
+                description: 'Workspace-level task details.',
+                filename: 'task-details.ai.md',
+                templateBody: '# My Custom Task Details\n\n## Findings\n',
             };
-            registry.registerAndPersistType(workspaceRoot, overriddenResearch);
+            registry.registerAndPersistType(workspaceRoot, overriddenTaskDetails);
             registry.initialize();
             assert.strictEqual(
-                registry.getType('research').displayName,
-                'Custom Research Override',
+                registry.getType('task-details').displayName,
+                'Custom Task Details Override',
                 'Workspace override should win over built-in'
             );
         });
 
-        test('total type count is 6 when one unique workspace type is added', () => {
+        test('total type count is 2 when one unique workspace type is added', () => {
             registry.registerAndPersistType(workspaceRoot, CUSTOM_TYPE);
             registry.initialize();
-            assert.strictEqual(registry.getTypes().length, 7); // 6 built-ins + 1 new
+            assert.strictEqual(registry.getTypes().length, 2); // 1 built-in + 1 new
         });
 
-        test('overriding a built-in type keeps total count at 5', () => {
-            const overrideBuiltIn: ArtifactType = { ...CUSTOM_TYPE, id: 'review' };
+        test('overriding a built-in type keeps total count at 1', () => {
+            const overrideBuiltIn: ArtifactType = { ...CUSTOM_TYPE, id: 'task-details' };
             registry.registerAndPersistType(workspaceRoot, overrideBuiltIn);
             registry.initialize();
-            assert.strictEqual(registry.getTypes().length, 6); // still 6, one replaced
+            assert.strictEqual(registry.getTypes().length, 1); // still 1, one replaced
         });
 
         test('re-initialize() drops in-memory-only registrations', () => {

@@ -97,38 +97,18 @@ suite('Artifact Management Tools', () => {
 
         // ── invoke: happy-path ───────────────────────────────────────────
 
-        test('invoke returns all 5 default built-in types', async () => {
+        test('invoke returns the default built-in type', async () => {
             const result = await tool.invoke(
                 makeInvokeOptions<Record<string, never>>({}),
                 NEVER_TOKEN
             );
             const text = firstTextPart(result);
-            assert.ok(text.includes('6 artifact type(s)'), text);
+            assert.ok(text.includes('1 artifact type(s)'), text);
         });
 
-        test('invoke result includes the "research" type ID', async () => {
-            const result = await tool.invoke(makeInvokeOptions<Record<string, never>>({}), NEVER_TOKEN);
-            assert.ok(firstTextPart(result).includes('research'));
-        });
-
-        test('invoke result includes the "walkthrough" type', async () => {
-            const result = await tool.invoke(makeInvokeOptions<Record<string, never>>({}), NEVER_TOKEN);
-            assert.ok(firstTextPart(result).includes('walkthrough'));
-        });
-
-        test('invoke result includes the "task-details" type', async () => {
+        test('invoke result includes the "task-details" type ID', async () => {
             const result = await tool.invoke(makeInvokeOptions<Record<string, never>>({}), NEVER_TOKEN);
             assert.ok(firstTextPart(result).includes('task-details'));
-        });
-
-        test('invoke result includes the "review" type', async () => {
-            const result = await tool.invoke(makeInvokeOptions<Record<string, never>>({}), NEVER_TOKEN);
-            assert.ok(firstTextPart(result).includes('review'));
-        });
-
-        test('invoke result includes the "implementation-plan" type', async () => {
-            const result = await tool.invoke(makeInvokeOptions<Record<string, never>>({}), NEVER_TOKEN);
-            assert.ok(firstTextPart(result).includes('implementation-plan'));
         });
 
         test('invoke result includes displayName for each type', async () => {
@@ -153,7 +133,7 @@ suite('Artifact Management Tools', () => {
             });
             const result = await tool.invoke(makeInvokeOptions<Record<string, never>>({}), NEVER_TOKEN);
             const text = firstTextPart(result);
-            assert.ok(text.includes('7 artifact type(s)'), text);
+            assert.ok(text.includes('2 artifact type(s)'), text);
         });
 
         // ── prepareInvocation ────────────────────────────────────────────
@@ -198,7 +178,7 @@ suite('Artifact Management Tools', () => {
             assert.ok(text.includes(TASK_ID), text);
         });
 
-        test('invoke result includes all 5 artifact type entries', async () => {
+        test('invoke result includes the artifact type entry', async () => {
             const result = await tool.invoke(
                 makeInvokeOptions<IListArtifactsParams>({ taskId: TASK_ID }),
                 NEVER_TOKEN
@@ -206,7 +186,7 @@ suite('Artifact Management Tools', () => {
             const text = firstTextPart(result);
             // Count only the per-entry lines, which contain ' — template only' or ' — exists on disk'
             const entryCount = (text.match(/ — (template only|exists on disk)/g) ?? []).length;
-            assert.strictEqual(entryCount, 6, `Expected 6 entries, got ${entryCount} in: "${text}"`);
+            assert.strictEqual(entryCount, 1, `Expected 1 entries, got ${entryCount} in: "${text}"`);
         });
 
         test('invoke marks all artifacts as template-only when no files saved', async () => {
@@ -220,13 +200,13 @@ suite('Artifact Management Tools', () => {
         });
 
         test('invoke marks an artifact as existing after it is written', async () => {
-            artifactService.updateArtifact(TASK_ID, 'research', '# Research');
+            artifactService.updateArtifact(TASK_ID, 'task-details', '# Task Details');
             const result = await tool.invoke(
                 makeInvokeOptions<IListArtifactsParams>({ taskId: TASK_ID }),
                 NEVER_TOKEN
             );
             const text = firstTextPart(result);
-            assert.ok(text.includes('✔'), `research artifact should be marked as existing: "${text}"`);
+            assert.ok(text.includes('✔'), `task-details artifact should be marked as existing: "${text}"`);
         });
 
         // ── invoke: active task fallback ─────────────────────────────────
@@ -324,31 +304,31 @@ suite('Artifact Management Tools', () => {
         // ── invoke: file exists ──────────────────────────────────────────
 
         test('invoke returns saved content when artifact file exists on disk', async () => {
-            const content = '# Research\n\nMy findings.';
-            artifactService.updateArtifact(TASK_ID, 'research', content);
+            const content = '# Task Details\n\nMy findings.';
+            artifactService.updateArtifact(TASK_ID, 'task-details', content);
             const result = await tool.invoke(
-                makeInvokeOptions<IGetArtifactParams>({ taskId: TASK_ID, artifactType: 'research' }),
+                makeInvokeOptions<IGetArtifactParams>({ taskId: TASK_ID, artifactType: 'task-details' }),
                 NEVER_TOKEN
             );
             assert.ok(firstTextPart(result).includes('My findings.'));
         });
 
         test('invoke result includes a header with artifact type and task ID', async () => {
-            artifactService.updateArtifact(TASK_ID, 'research', '# Research');
+            artifactService.updateArtifact(TASK_ID, 'task-details', '# Task Details');
             const result = await tool.invoke(
-                makeInvokeOptions<IGetArtifactParams>({ taskId: TASK_ID, artifactType: 'research' }),
+                makeInvokeOptions<IGetArtifactParams>({ taskId: TASK_ID, artifactType: 'task-details' }),
                 NEVER_TOKEN
             );
             const text = firstTextPart(result);
             assert.ok(text.includes(TASK_ID), text);
-            assert.ok(text.includes('research'), text);
+            assert.ok(text.includes('task-details'), text);
         });
 
         // ── invoke: file does not exist (template fallback) ──────────────
 
         test('invoke returns template body when artifact file does not exist', async () => {
             const result = await tool.invoke(
-                makeInvokeOptions<IGetArtifactParams>({ taskId: TASK_ID, artifactType: 'walkthrough' }),
+                makeInvokeOptions<IGetArtifactParams>({ taskId: TASK_ID, artifactType: 'task-details' }),
                 NEVER_TOKEN
             );
             const text = firstTextPart(result);
@@ -358,7 +338,7 @@ suite('Artifact Management Tools', () => {
 
         test('template body returned has no YAML frontmatter', async () => {
             const result = await tool.invoke(
-                makeInvokeOptions<IGetArtifactParams>({ taskId: TASK_ID, artifactType: 'walkthrough' }),
+                makeInvokeOptions<IGetArtifactParams>({ taskId: TASK_ID, artifactType: 'task-details' }),
                 NEVER_TOKEN
             );
             const text = firstTextPart(result);
@@ -369,7 +349,7 @@ suite('Artifact Management Tools', () => {
 
         test('template fallback includes a "Note" about updating the artifact', async () => {
             const result = await tool.invoke(
-                makeInvokeOptions<IGetArtifactParams>({ taskId: TASK_ID, artifactType: 'research' }),
+                makeInvokeOptions<IGetArtifactParams>({ taskId: TASK_ID, artifactType: 'task-details' }),
                 NEVER_TOKEN
             );
             assert.ok(firstTextPart(result).includes('update_artifact'));
@@ -379,9 +359,9 @@ suite('Artifact Management Tools', () => {
 
         test('invoke without taskId falls back to active task', async () => {
             taskManager.activateTask(TASK_ID);
-            artifactService.updateArtifact(TASK_ID, 'research', '# Research\n\nActive task content.');
+            artifactService.updateArtifact(TASK_ID, 'task-details', '# Task Details\n\nActive task content.');
             const result = await tool.invoke(
-                makeInvokeOptions<IGetArtifactParams>({ artifactType: 'research' }),
+                makeInvokeOptions<IGetArtifactParams>({ artifactType: 'task-details' }),
                 NEVER_TOKEN
             );
             assert.ok(firstTextPart(result).includes('Active task content.'));
@@ -392,7 +372,7 @@ suite('Artifact Management Tools', () => {
         test('invoke throws LLM-friendly error when no taskId and no active task', async () => {
             await assert.rejects(
                 () => tool.invoke(
-                    makeInvokeOptions<IGetArtifactParams>({ artifactType: 'research' }),
+                    makeInvokeOptions<IGetArtifactParams>({ artifactType: 'task-details' }),
                     NEVER_TOKEN
                 ),
                 (err: Error) => {
@@ -423,15 +403,15 @@ suite('Artifact Management Tools', () => {
 
         test('prepareInvocation invocationMessage contains the artifactType', async () => {
             const prep = await tool.prepareInvocation(
-                makePrepareOptions<IGetArtifactParams>({ taskId: TASK_ID, artifactType: 'review' }),
+                makePrepareOptions<IGetArtifactParams>({ taskId: TASK_ID, artifactType: 'task-details' }),
                 NEVER_TOKEN
             );
-            assert.ok((prep.invocationMessage as string).includes('review'), prep.invocationMessage as string);
+            assert.ok((prep.invocationMessage as string).includes('task-details'), prep.invocationMessage as string);
         });
 
         test('prepareInvocation invocationMessage contains the taskId', async () => {
             const prep = await tool.prepareInvocation(
-                makePrepareOptions<IGetArtifactParams>({ taskId: TASK_ID, artifactType: 'review' }),
+                makePrepareOptions<IGetArtifactParams>({ taskId: TASK_ID, artifactType: 'task-details' }),
                 NEVER_TOKEN
             );
             assert.ok((prep.invocationMessage as string).includes(TASK_ID), prep.invocationMessage as string);
@@ -439,11 +419,11 @@ suite('Artifact Management Tools', () => {
 
         test('prepareInvocation confirmation message references the artifact type', async () => {
             const prep = await tool.prepareInvocation(
-                makePrepareOptions<IGetArtifactParams>({ taskId: TASK_ID, artifactType: 'review' }),
+                makePrepareOptions<IGetArtifactParams>({ taskId: TASK_ID, artifactType: 'task-details' }),
                 NEVER_TOKEN
             );
             const msg = prep.confirmationMessages?.message as vscode.MarkdownString;
-            assert.ok(msg.value.includes('review'), msg.value);
+            assert.ok(msg.value.includes('task-details'), msg.value);
         });
     });
 
@@ -464,28 +444,28 @@ suite('Artifact Management Tools', () => {
             const result = await tool.invoke(
                 makeInvokeOptions<IUpdateArtifactParams>({
                     taskId: TASK_ID,
-                    artifactType: 'research',
-                    content: '# Research\n\nContent.',
+                    artifactType: 'task-details',
+                    content: '# Task Details\n\nContent.',
                 }),
                 NEVER_TOKEN
             );
             const text = firstTextPart(result);
-            assert.ok(text.includes('research'), text);
+            assert.ok(text.includes('task-details'), text);
             assert.ok(text.includes(TASK_ID), text);
             assert.ok(text.toLowerCase().includes('saved') || text.toLowerCase().includes('success'), text);
         });
 
         test('invoke actually persists the file to disk', async () => {
-            const content = '# Research\n\nPersisted.';
+            const content = '# Task Details\n\nPersisted.';
             await tool.invoke(
                 makeInvokeOptions<IUpdateArtifactParams>({
                     taskId: TASK_ID,
-                    artifactType: 'research',
+                    artifactType: 'task-details',
                     content,
                 }),
                 NEVER_TOKEN
             );
-            const filePath = path.join(workspaceRoot, '.tasks', TASK_ID, 'research.ai.md');
+            const filePath = path.join(workspaceRoot, '.tasks', TASK_ID, 'task-details.ai.md');
             assert.ok(fs.existsSync(filePath), 'File should exist after invoke');
             assert.strictEqual(fs.readFileSync(filePath, 'utf-8'), content);
         });
@@ -493,30 +473,37 @@ suite('Artifact Management Tools', () => {
         test('invoke overwrites existing artifact content', async () => {
             await tool.invoke(
                 makeInvokeOptions<IUpdateArtifactParams>({
-                    taskId: TASK_ID, artifactType: 'research', content: '# First version',
+                    taskId: TASK_ID, artifactType: 'task-details', content: '# First version',
                 }),
                 NEVER_TOKEN
             );
             await tool.invoke(
                 makeInvokeOptions<IUpdateArtifactParams>({
-                    taskId: TASK_ID, artifactType: 'research', content: '# Second version',
+                    taskId: TASK_ID, artifactType: 'task-details', content: '# Second version',
                 }),
                 NEVER_TOKEN
             );
-            const filePath = path.join(workspaceRoot, '.tasks', TASK_ID, 'research.ai.md');
+            const filePath = path.join(workspaceRoot, '.tasks', TASK_ID, 'task-details.ai.md');
             assert.strictEqual(fs.readFileSync(filePath, 'utf-8'), '# Second version');
         });
 
         test('invoke can write multiple artifact types to the same task', async () => {
+            registry.registerType({
+                id: 'custom-walkthrough',
+                displayName: 'Walkthrough',
+                description: 'Custom',
+                filename: 'custom-walkthrough.ai.md',
+                templateBody: ''
+            });
             await tool.invoke(makeInvokeOptions<IUpdateArtifactParams>({
-                taskId: TASK_ID, artifactType: 'research', content: '# Research',
+                taskId: TASK_ID, artifactType: 'task-details', content: '# Task Details',
             }), NEVER_TOKEN);
             await tool.invoke(makeInvokeOptions<IUpdateArtifactParams>({
-                taskId: TASK_ID, artifactType: 'walkthrough', content: '# Walkthrough',
+                taskId: TASK_ID, artifactType: 'custom-walkthrough', content: '# Walkthrough',
             }), NEVER_TOKEN);
 
-            assert.ok(fs.existsSync(path.join(workspaceRoot, '.tasks', TASK_ID, 'research.ai.md')));
-            assert.ok(fs.existsSync(path.join(workspaceRoot, '.tasks', TASK_ID, 'walkthrough.ai.md')));
+            assert.ok(fs.existsSync(path.join(workspaceRoot, '.tasks', TASK_ID, 'task-details.ai.md')));
+            assert.ok(fs.existsSync(path.join(workspaceRoot, '.tasks', TASK_ID, 'custom-walkthrough.ai.md')));
         });
 
         // ── invoke: active task fallback ─────────────────────────────────
@@ -526,13 +513,13 @@ suite('Artifact Management Tools', () => {
             await assert.doesNotReject(
                 () => tool.invoke(
                     makeInvokeOptions<IUpdateArtifactParams>({
-                        artifactType: 'research',
-                        content: '# Research\n\nFrom active task.',
+                        artifactType: 'task-details',
+                        content: '# Task Details\n\nFrom active task.',
                     }),
                     NEVER_TOKEN
                 )
             );
-            const filePath = path.join(workspaceRoot, '.tasks', TASK_ID, 'research.ai.md');
+            const filePath = path.join(workspaceRoot, '.tasks', TASK_ID, 'task-details.ai.md');
             assert.ok(fs.existsSync(filePath), 'File should be written via active task fallback');
         });
 
@@ -540,8 +527,8 @@ suite('Artifact Management Tools', () => {
             taskManager.activateTask(TASK_ID);
             const result = await tool.invoke(
                 makeInvokeOptions<IUpdateArtifactParams>({
-                    artifactType: 'research',
-                    content: '# Research',
+                    artifactType: 'task-details',
+                    content: '# Task Details',
                 }),
                 NEVER_TOKEN
             );
@@ -554,8 +541,8 @@ suite('Artifact Management Tools', () => {
             await assert.rejects(
                 () => tool.invoke(
                     makeInvokeOptions<IUpdateArtifactParams>({
-                        artifactType: 'research',
-                        content: '# Research',
+                        artifactType: 'task-details',
+                        content: '# Task Details',
                     }),
                     NEVER_TOKEN
                 ),
@@ -571,8 +558,8 @@ suite('Artifact Management Tools', () => {
                 () => tool.invoke(
                     makeInvokeOptions<IUpdateArtifactParams>({
                         taskId: 'ghost-task',
-                        artifactType: 'research',
-                        content: '# Research',
+                        artifactType: 'task-details',
+                        content: '# Task Details',
                     }),
                     NEVER_TOKEN
                 ),
@@ -610,17 +597,17 @@ suite('Artifact Management Tools', () => {
         test('prepareInvocation invocationMessage contains the artifactType', async () => {
             const prep = await tool.prepareInvocation(
                 makePrepareOptions<IUpdateArtifactParams>({
-                    taskId: TASK_ID, artifactType: 'review', content: '',
+                    taskId: TASK_ID, artifactType: 'task-details', content: '',
                 }),
                 NEVER_TOKEN
             );
-            assert.ok((prep.invocationMessage as string).includes('review'));
+            assert.ok((prep.invocationMessage as string).includes('task-details'));
         });
 
         test('prepareInvocation confirmation message contains the taskId', async () => {
             const prep = await tool.prepareInvocation(
                 makePrepareOptions<IUpdateArtifactParams>({
-                    taskId: TASK_ID, artifactType: 'review', content: '',
+                    taskId: TASK_ID, artifactType: 'task-details', content: '',
                 }),
                 NEVER_TOKEN
             );
@@ -631,7 +618,7 @@ suite('Artifact Management Tools', () => {
         test('prepareInvocation confirmation message warns about overwriting', async () => {
             const prep = await tool.prepareInvocation(
                 makePrepareOptions<IUpdateArtifactParams>({
-                    taskId: TASK_ID, artifactType: 'review', content: '',
+                    taskId: TASK_ID, artifactType: 'task-details', content: '',
                 }),
                 NEVER_TOKEN
             );
@@ -740,7 +727,7 @@ suite('Artifact Management Tools', () => {
             assert.strictEqual(type.templateBody, '');
         });
 
-        test('invoke total registered type count increases to 6', async () => {
+        test('invoke total registered type count increases to 2', async () => {
             await tool.invoke(
                 makeInvokeOptions<IRegisterArtifactTypeParams>({
                     id: 'new-type',
@@ -749,7 +736,7 @@ suite('Artifact Management Tools', () => {
                 }),
                 NEVER_TOKEN
             );
-            assert.strictEqual(registry.getTypes().length, 7);
+            assert.strictEqual(registry.getTypes().length, 2);
         });
 
         // ── invoke: error handling ───────────────────────────────────────

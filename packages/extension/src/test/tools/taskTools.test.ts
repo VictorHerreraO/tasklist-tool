@@ -374,7 +374,7 @@ suite('Task Management Tools', () => {
                 ),
                 (err: Error) => {
                     assert.ok(err.message.includes('not-a-proj'), err.message);
-                    assert.ok(err.message.includes('not a project'), err.message);
+                    assert.ok(err.message.includes('not found') || err.message.includes('not a project'), err.message);
                     return true;
                 }
             );
