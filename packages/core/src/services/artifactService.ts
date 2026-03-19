@@ -103,6 +103,12 @@ export class ArtifactService {
     getArtifact(taskId: string, typeId: string, parentTaskId?: string): string {
         // Let the registry throw first if the type is unknown.
         const type = this.artifactRegistry.getType(typeId);
+
+        // Standardize: ensure the task exists before performing IO.
+        if (!this.taskManager.taskExists(taskId, parentTaskId)) {
+            throw new Error(`Cannot get artifact: task '${taskId}' not found${parentTaskId ? ` in project '${parentTaskId}'` : ''}.`);
+        }
+
         const filePath = this.artifactPath(taskId, type.filename, parentTaskId);
         if (fs.existsSync(filePath)) {
             return fs.readFileSync(filePath, 'utf-8');
@@ -130,6 +136,18 @@ export class ArtifactService {
         if (!fs.existsSync(dir)) {
             fs.mkdirSync(dir, { recursive: true });
         }
-        fs.writeFileSync(this.artifactPath(taskId, type.filename, parentTaskId), content, 'utf-8');
+        
+        const filePath = this.artifactPath(taskId, type.filename, parentTaskId);
+        // Atomic write strategy: write to temp file then rename.
+        const tmpPath = `${filePath}.${Date.now()}.tmp`;
+        try {
+            fs.writeFileSync(tmpPath, content, 'utf-8');
+            fs.renameSync(tmpPath, filePath);
+        } catch (err) {
+            if (fs.existsSync(tmpPath)) {
+                fs.unlinkSync(tmpPath);
+            }
+            throw err;
+        }
     }
 }

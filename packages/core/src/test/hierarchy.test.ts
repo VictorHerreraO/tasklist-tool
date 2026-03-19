@@ -122,17 +122,17 @@ describe('Hierarchy Integration Suite', () => {
 
         it('should require parentTaskId to start and close a subtask', () => {
             // Start fails without parentTaskId
-            expect(() => taskManager.start_task(subtaskId)).to.throw(/Task 'child-task' not found\./);
+            expect(() => taskManager.startTask(subtaskId)).to.throw(/Task 'child-task' not found\./);
 
             // Start succeeds with parentTaskId
-            const startEntry = taskManager.start_task(subtaskId, projectId);
+            const startEntry = taskManager.startTask(subtaskId, projectId);
             expect(startEntry.status).to.equal(TaskStatus.InProgress);
 
             // Close fails without parentTaskId
-            expect(() => taskManager.close_task(subtaskId)).to.throw(/Task 'child-task' not found\./);
+            expect(() => taskManager.closeTask(subtaskId)).to.throw(/Task 'child-task' not found\./);
 
             // Close succeeds with parentTaskId
-            const closeEntry = taskManager.close_task(subtaskId, projectId);
+            const closeEntry = taskManager.closeTask(subtaskId, projectId);
             expect(closeEntry.status).to.equal(TaskStatus.Closed);
         });
 
@@ -169,29 +169,29 @@ describe('Hierarchy Integration Suite', () => {
         });
 
         it('should require parentTaskId to create artifacts for a subtask if not found in root', () => {
-            const content = '# Subtask Research';
+            const content = '# Subtask Details';
             // Current findEntryGlobally in updateArtifact should search using parentTaskId
             // If parentTaskId is missing, it only searches root.
-            expect(() => artifactService.updateArtifact(subtaskId, 'research', content)).to.throw(/Task 'child-task' not found\./);
+            expect(() => artifactService.updateArtifact(subtaskId, 'task-details', content)).to.throw(/Task 'child-task' not found\./);
 
-            artifactService.updateArtifact(subtaskId, 'research', content, projectId);
+            artifactService.updateArtifact(subtaskId, 'task-details', content, projectId);
 
-            const expectedPath = path.join(workspaceRoot, '.tasks', projectId, subtaskId, 'research.ai.md');
+            const expectedPath = path.join(workspaceRoot, '.tasks', projectId, subtaskId, 'task-details.ai.md');
             expect(fs.existsSync(expectedPath)).to.be.true;
             expect(fs.readFileSync(expectedPath, 'utf-8')).to.equal(content);
         });
 
         it('should require parentTaskId to list and locate artifacts in nested structure', () => {
-            artifactService.updateArtifact(subtaskId, 'research', '# Research', projectId);
+            artifactService.updateArtifact(subtaskId, 'task-details', '# Details', projectId);
 
             expect(() => artifactService.listArtifacts(subtaskId)).to.throw(/Task 'child-task' not found\./);
 
             const artifacts = artifactService.listArtifacts(subtaskId, projectId);
-            const research = artifacts.find(a => a.type.id === 'research');
+            const taskDetails = artifacts.find(a => a.type.id === 'task-details');
 
-            expect(research).to.not.be.undefined;
-            expect(research?.exists).to.be.true;
-            expect(research?.path).to.contain(path.join('.tasks', projectId, subtaskId));
+            expect(taskDetails).to.not.be.undefined;
+            expect(taskDetails?.exists).to.be.true;
+            expect(taskDetails?.path).to.contain(path.join('.tasks', projectId, subtaskId));
         });
     });
 
@@ -201,13 +201,13 @@ describe('Hierarchy Integration Suite', () => {
             const s1 = 'sub-1';
             taskManager.createTask(p1, 'project');
             taskManager.createTask(s1, 'task', p1);
-            artifactService.updateArtifact(s1, 'research', '# Content', p1);
+            artifactService.updateArtifact(s1, 'task-details', '# Content', p1);
 
             const tasksPath = path.join(workspaceRoot, '.tasks');
             expect(fs.existsSync(tasksPath)).to.be.true;
 
             // Verify structure exists before "cleanup"
-            const subtaskArtifactPath = path.join(tasksPath, p1, s1, 'research.ai.md');
+            const subtaskArtifactPath = path.join(tasksPath, p1, s1, 'task-details.ai.md');
             expect(fs.existsSync(subtaskArtifactPath)).to.be.true;
 
             // Simulate workspace cleanup (standard fs removal)

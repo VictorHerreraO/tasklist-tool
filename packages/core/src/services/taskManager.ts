@@ -59,7 +59,7 @@ export class TaskManager {
 
     /**
      * Reads and parses the index file. Returns a blank index if it does not
-     * exist yet (i.e. before the first write).
+     * exist yet (i.e. before the first write) or if it is corrupt.
      * 
      * @param parentTaskId - Optional ID of the parent project.
      */
@@ -69,15 +69,20 @@ export class TaskManager {
             return { activeTaskId: null, tasks: [] };
         }
         const raw = fs.readFileSync(indexPath, 'utf-8');
-        const index = JSON.parse(raw) as TaskIndex;
+        try {
+            const index = JSON.parse(raw) as TaskIndex;
 
-        // Migration: Ensure all tasks have a type (default to 'task' for existing data)
-        index.tasks = index.tasks.map(t => ({
-            ...t,
-            type: t.type ?? 'task',
-        }));
+            // Migration: Ensure all tasks have a type (default to 'task' for existing data)
+            index.tasks = index.tasks.map(t => ({
+                ...t,
+                type: t.type ?? 'task',
+            }));
 
-        return index;
+            return index;
+        } catch (err) {
+            // If the index is corrupt, return a blank one to allow recovery via overwrite.
+            return { activeTaskId: null, tasks: [] };
+        }
     }
 
     /**
@@ -92,7 +97,18 @@ export class TaskManager {
         if (!fs.existsSync(dir)) {
             fs.mkdirSync(dir, { recursive: true });
         }
-        fs.writeFileSync(indexPath, JSON.stringify(index, null, 2), 'utf-8');
+        
+        // Atomic write strategy: write to temp file then rename.
+        const tmpPath = `${indexPath}.${Date.now()}.tmp`;
+        try {
+            fs.writeFileSync(tmpPath, JSON.stringify(index, null, 2), 'utf-8');
+            fs.renameSync(tmpPath, indexPath);
+        } catch (err) {
+            if (fs.existsSync(tmpPath)) {
+                fs.unlinkSync(tmpPath);
+            }
+            throw err;
+        }
     }
 
     /** Returns the entry for `id` within a specific `index`, or `undefined` if not found. */
@@ -114,7 +130,14 @@ export class TaskManager {
 
     /**
      * Recursively searches for an entry in all project indices.
-     * WARNING: If IDs are not globally unique, this returns the first match found.
+     * 
+     * @param id - The ID of the task to find.
+     * @param currentParentId - The ID of the project to start searching from (defaults to root).
+     * @returns The task entry, its index, and the parent task ID if found.
+     * 
+     * @warning This method performs a depth-first search and returns the FIRST match found.
+     * If task IDs are not globally unique across different projects, the result may be 
+     * non-deterministic unless scoped via `currentParentId`.
      */
     private findEntryRecursive(id: string, currentParentId?: string): { entry: TaskEntry; index: TaskIndex; parentTaskId?: string } | undefined {
         const index = this.readIndex(currentParentId);
@@ -160,9 +183,9 @@ export class TaskManager {
         }
 
         if (parentTaskId) {
-            const parentResult = this.findProjectGlobally(parentTaskId);
+            const parentResult = this.findEntryRecursive(parentTaskId);
             if (!parentResult) {
-                throw new Error(`Parent project '${parentTaskId}' not found.`);
+                throw new Error(`Parent task '${parentTaskId}' not found.`);
             }
             if (parentResult.entry.type !== 'project') {
                 throw new Error(`Parent task '${parentTaskId}' is not a project.`);
@@ -352,7 +375,7 @@ export class TaskManager {
      * @param parentTaskId - Optional ID of the parent project.
      * @throws {Error} If the task is not found or not in `open` status.
      */
-    start_task(id: string, parentTaskId?: string): TaskEntry {
+    public startTask(id: string, parentTaskId?: string): TaskEntry {
         const result = this.findEntryGlobally(id, parentTaskId);
         if (!result) {
             throw new Error(`Task '${id}' not found${parentTaskId ? ` in project '${parentTaskId}'` : ''}.`);
@@ -371,13 +394,20 @@ export class TaskManager {
     }
 
     /**
+     * @deprecated Use {@link startTask} instead.
+     */
+    public start_task(id: string, parentTaskId?: string): TaskEntry {
+        return this.startTask(id, parentTaskId);
+    }
+
+    /**
      * Transitions a task from `in-progress` → `closed`.
      *
      * @param id - ID of the task to close.
      * @param parentTaskId - Optional ID of the parent project.
      * @throws {Error} If the task is not found or not in `in-progress` status.
      */
-    close_task(id: string, parentTaskId?: string): TaskEntry {
+    public closeTask(id: string, parentTaskId?: string): TaskEntry {
         const result = this.findEntryGlobally(id, parentTaskId);
         if (!result) {
             throw new Error(`Task '${id}' not found${parentTaskId ? ` in project '${parentTaskId}'` : ''}.`);
@@ -385,7 +415,7 @@ export class TaskManager {
         const { entry, index, parentTaskId: resolvedParentId } = result;
         if (entry.status !== TaskStatus.InProgress) {
             throw new Error(
-                `Cannot close task '${id}': current status is '${entry.status}', expected 'in-progress'. Use 'start_task' first.`
+                `Cannot close task '${id}': current status is '${entry.status}', expected 'in-progress'. Use 'startTask' first.`
             );
         }
         entry.status = TaskStatus.Closed;
@@ -393,5 +423,12 @@ export class TaskManager {
         this.writeIndex(index, resolvedParentId);
         this.emitter.emit('didUpdateTask', { taskId: id, event: TaskEventType.StatusChanged });
         return entry;
+    }
+
+    /**
+     * @deprecated Use {@link closeTask} instead.
+     */
+    public close_task(id: string, parentTaskId?: string): TaskEntry {
+        return this.closeTask(id, parentTaskId);
     }
 }
