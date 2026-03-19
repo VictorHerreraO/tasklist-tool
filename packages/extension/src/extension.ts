@@ -249,8 +249,16 @@ export async function activate(context: vscode.ExtensionContext) {
     );
 
     // 3. Service Initialization Logic
+    let serviceSubscriptions: vscode.Disposable[] = [];
+    
     const initializeServices = async () => {
         try {
+            // Clean up previous registrations to prevent duplicates on workspace folder changes
+            for (const sub of serviceSubscriptions) {
+                sub.dispose();
+            }
+            serviceSubscriptions = [];
+
             const workspaceFolders = vscode.workspace.workspaceFolders;
             if (!workspaceFolders || workspaceFolders.length === 0) {
                 taskManager = undefined;
@@ -283,10 +291,10 @@ export async function activate(context: vscode.ExtensionContext) {
                     }
                 }
             });
-            context.subscriptions.push({ dispose: taskUpdateSubscription });
+            serviceSubscriptions.push({ dispose: taskUpdateSubscription });
 
             // Tool Registration (only if workspace is open)
-            context.subscriptions.push(
+            serviceSubscriptions.push(
                 vscode.lm.registerTool('list_tasks', new ListTasksTool(taskManager)),
                 vscode.lm.registerTool('create_task', new CreateTaskTool(taskManager)),
                 vscode.lm.registerTool('activate_task', new ActivateTaskTool(taskManager)),
@@ -300,6 +308,12 @@ export async function activate(context: vscode.ExtensionContext) {
                 vscode.lm.registerTool('update_artifact', new UpdateArtifactTool(taskManager, artifactService)),
                 vscode.lm.registerTool('register_artifact_type', new RegisterArtifactTypeTool(workspaceRoot, registry)),
             );
+
+            // Link the local list of subscriptions to the overall extension lifecycle
+            // This ensures they are disposed when the extension is deactivated
+            for (const sub of serviceSubscriptions) {
+                context.subscriptions.push(sub);
+            }
 
             outputChannel.appendLine('Tasklist Tool: Services initialized.');
         } catch (error) {
