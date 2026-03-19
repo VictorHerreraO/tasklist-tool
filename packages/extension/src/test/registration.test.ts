@@ -1,49 +1,52 @@
 import * as assert from 'assert';
 import * as vscode from 'vscode';
+import * as fs from 'fs';
+import * as path from 'path';
+
+/**
+ * Minimal interface for the package.json contribution structure.
+ */
+interface PackageJson {
+    contributes?: {
+        commands?: Array<{ command: string }>;
+        languageModelTools?: Array<{ name: string }>;
+    };
+}
 
 suite('Registration Contract Tests', () => {
     
+    // Helper to read package.json
+    const getPackageJson = (): PackageJson => {
+        // In the test environment, __dirname points to out/test/
+        // We need to go up to the extension root to find package.json
+        const pkgPath = path.join(vscode.extensions.getExtension('local.tasklist-tool')?.extensionPath || '', 'package.json');
+        const content = fs.readFileSync(pkgPath, 'utf8');
+        return JSON.parse(content);
+    };
+
     test('All commands from package.json should be registered', async () => {
-        const expectedCommands = [
-            'tasklist.activateTask',
-            'tasklist.addSubtask',
-            'tasklist.refresh',
-            'tasklist.startTask',
-            'tasklist.closeTask',
-            'tasklist.promoteTask',
-            'tasklist.createTask'
-        ];
+        const pkg = getPackageJson();
+        const expectedCommands = (pkg.contributes?.commands || []).map(c => c.command);
+
+        assert.ok(expectedCommands.length > 0, 'No commands found in package.json to verify');
 
         const allCommands = await vscode.commands.getCommands(true);
         for (const cmd of expectedCommands) {
-            assert.ok(allCommands.includes(cmd), `Command '${cmd}' is not registered`);
+            assert.ok(allCommands.includes(cmd), `Command '${cmd}' defined in package.json is not registered in the extension`);
         }
     });
 
     test('All language model tools from package.json should be registered', async () => {
-        const expectedTools = [
-            'list_tasks',
-            'create_task',
-            'activate_task',
-            'deactivate_task',
-            'start_task',
-            'close_task',
-            'list_artifact_types',
-            'list_artifacts',
-            'get_artifact',
-            'update_artifact',
-            'register_artifact_type',
-            'promote_to_project'
-        ];
+        const pkg = getPackageJson();
+        const expectedTools = (pkg.contributes?.languageModelTools || []).map(t => t.name);
 
-        // vscode.lm.tools is the API to get registered tools
-        // We need to wait a bit to ensure services are initialized if needed,
-        // but activation should have happened by now.
+        assert.ok(expectedTools.length > 0, 'No LM tools found in package.json to verify');
+
         const registeredTools = vscode.lm.tools;
         const registeredToolNames = registeredTools.map(t => t.name);
 
         for (const tool of expectedTools) {
-            assert.ok(registeredToolNames.includes(tool), `Tool '${tool}' is not registered. Registered: ${registeredToolNames.join(', ')}`);
+            assert.ok(registeredToolNames.includes(tool), `Tool '${tool}' defined in package.json is not registered in the extension. Registered: ${registeredToolNames.join(', ')}`);
         }
     });
 });
