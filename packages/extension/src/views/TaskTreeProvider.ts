@@ -177,8 +177,8 @@ export class TaskTreeItem extends vscode.TreeItem {
         super(task.id, collapsibleState);
         this.id = (task.parentTaskId ?? 'root') + ':' + task.id;
 
+        // Clean label, use description for active state
         if (this.isActive) {
-            this.label = `${this.task.id} (active)`;
             this.description = `${this.task.status} • Active`;
         } else {
             this.description = this.task.status;
@@ -216,32 +216,27 @@ export class TaskTreeItem extends vscode.TreeItem {
     }
 
     public updateIcon(): void {
+        const color = this.isActive ? new vscode.ThemeColor('list.activeSelectionForeground') : undefined;
+        let iconId: string;
+
         if (this.task.type === 'project') {
             const isExpanded = this.collapsibleState === vscode.TreeItemCollapsibleState.Expanded;
-            if (this.isActive) {
-                this.iconPath = isExpanded
-                    ? new vscode.ThemeIcon('root-folder-opened')
-                    : new vscode.ThemeIcon('root-folder');
-            } else {
-                this.iconPath = isExpanded
-                    ? new vscode.ThemeIcon('folder-opened')
-                    : new vscode.ThemeIcon('folder');
-            }
-        } else if (this.isActive) {
-            this.iconPath = new vscode.ThemeIcon(this.task.status === TaskStatus.InProgress ? 'star-full' : 'star');
+            iconId = isExpanded ? 'folder-opened' : 'folder';
         } else {
-            this.iconPath = this.getIconForStatus(this.task.status);
+            iconId = this.getIconIdForStatus(this.task.status);
         }
+
+        this.iconPath = new vscode.ThemeIcon(iconId, color);
     }
 
-    private getIconForStatus(status: TaskStatus): vscode.ThemeIcon {
+    private getIconIdForStatus(status: TaskStatus): string {
         switch (status) {
             case TaskStatus.InProgress:
-                return new vscode.ThemeIcon('loading~spin');
+                return 'loading~spin';
             case TaskStatus.Closed:
-                return new vscode.ThemeIcon('pass');
+                return 'pass';
             default:
-                return new vscode.ThemeIcon('circle-large-outline');
+                return 'circle-large-outline';
         }
     }
 }

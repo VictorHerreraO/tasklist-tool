@@ -59,7 +59,8 @@ suite('TaskTreeProvider Logic', () => {
             manager.activateTask('active-task');
             const item = new TaskTreeItem(entry, true);
 
-            assert.strictEqual(item.label, 'active-task (active)');
+            // Refinement: label should be clean now
+            assert.strictEqual(item.label, 'active-task');
             assert.strictEqual(item.description, 'open • Active');
         });
 
@@ -86,23 +87,37 @@ suite('TaskTreeProvider Logic', () => {
             assert.strictEqual(icon.id, 'loading~spin');
         });
 
-        test('active in-progress task has star-full icon', () => {
+        test('active items use list.activeSelectionForeground color', () => {
+            const entry = manager.createTask('active-item');
+            const item = new TaskTreeItem(entry, true);
+            const icon = item.iconPath as vscode.ThemeIcon;
+            assert.ok(icon.color, 'Active icon should have a color');
+            assert.strictEqual((icon.color as vscode.ThemeColor).id, 'list.activeSelectionForeground');
+        });
+
+        test('active in-progress task has unified loading~spin icon with color', () => {
             manager.createTask('active-ip');
             manager.start_task('active-ip');
             manager.activateTask('active-ip');
             const entry = manager.listTasks().find(t => t.id === 'active-ip')!;
             const item = new TaskTreeItem(entry, true);
             const icon = item.iconPath as vscode.ThemeIcon;
-            assert.strictEqual(icon.id, 'star-full');
+            
+            // Refinement: no longer uses 'star-full'
+            assert.strictEqual(icon.id, 'loading~spin');
+            assert.strictEqual((icon.color as vscode.ThemeColor).id, 'list.activeSelectionForeground');
         });
 
-        test('active open task has star icon', () => {
+        test('active open task has unified circle icon with color', () => {
             manager.createTask('active-open');
             manager.activateTask('active-open');
             const entry = manager.listTasks().find(t => t.id === 'active-open')!;
             const item = new TaskTreeItem(entry, true);
             const icon = item.iconPath as vscode.ThemeIcon;
-            assert.strictEqual(icon.id, 'star');
+            
+            // Refinement: no longer uses 'star'
+            assert.strictEqual(icon.id, 'circle-large-outline');
+            assert.strictEqual((icon.color as vscode.ThemeColor).id, 'list.activeSelectionForeground');
         });
 
         test('project has folder icon when collapsed', () => {
@@ -123,7 +138,7 @@ suite('TaskTreeProvider Logic', () => {
             assert.strictEqual(icon.id, 'folder-opened');
         });
 
-        test('active project has root-folder icon when collapsed', () => {
+        test('active project has unified folder icon with color', () => {
             manager.createTask('active-proj', 'project');
             manager.activateTask('active-proj');
             const entry = manager.listTasks().find(t => t.id === 'active-proj')!;
@@ -131,7 +146,10 @@ suite('TaskTreeProvider Logic', () => {
             item.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
             item.updateIcon();
             const icon = item.iconPath as vscode.ThemeIcon;
-            assert.strictEqual(icon.id, 'root-folder');
+            
+            // Refinement: no longer uses 'root-folder'
+            assert.strictEqual(icon.id, 'folder');
+            assert.strictEqual((icon.color as vscode.ThemeColor).id, 'list.activeSelectionForeground');
         });
 
         test('tooltip contains Markdown with task metadata', () => {
