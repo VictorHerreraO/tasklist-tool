@@ -29,11 +29,13 @@ export class TaskTreeProvider implements vscode.TreeDataProvider<TaskTreeItem>, 
     }
 
     /**
-     * Records the expansion state and refreshes the item to update its icon.
+     * Updates the expansion state of an item and refreshes it to update icons.
      */
-    setExpanded(item: TaskTreeItem, _expanded: boolean): void {
-        // VS Code already updated item.collapsibleState.
-        // We just need to trigger a refresh so getTreeItem is called and icons update.
+    setExpanded(item: TaskTreeItem, expanded: boolean): void {
+        item.collapsibleState = expanded
+            ? vscode.TreeItemCollapsibleState.Expanded
+            : vscode.TreeItemCollapsibleState.Collapsed;
+
         this.refresh(item);
     }
 
