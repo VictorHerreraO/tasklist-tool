@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { TaskManager } from '@tasklist/core';
 import { IActivateTaskParams } from './interfaces.js';
+import { mapToolError } from './toolUtils.js';
 
 /**
  * Language model tool that sets a task as the currently active task.
@@ -69,18 +70,7 @@ export class ActivateTaskTool implements vscode.LanguageModelTool<IActivateTaskP
                 ),
             ]);
         } catch (err: unknown) {
-            const message = err instanceof Error ? err.message : String(err);
-            if (message.includes('task not found')) {
-                throw new Error(
-                    `Cannot activate task '${taskId}': task not found. ` +
-                    `AI Agent might have forgot to provide a parent project id. ` +
-                    `Use 'list_tasks' to see available tasks, then retry with a valid taskId and parentTaskId if applicable.`
-                );
-            }
-            throw new Error(
-                `Failed to activate task '${taskId}': ${message}. ` +
-                `Verify the taskId is correct and the workspace index is accessible.`
-            );
+            throw mapToolError(err, taskId, 'activate task');
         }
     }
 }

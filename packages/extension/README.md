@@ -25,6 +25,22 @@ The extension contributes several commands to VS Code:
 - **TaskList: Refresh**: Reload the task tree.
 - **Promote to Project**: (Context menu) Convert an existing task to a project.
 
+## Extension Contributions
+
+### Tree View Context Values
+The Tree View items use a structured `contextValue` string to enable targeted context menu actions in `package.json`.
+
+**Task/Project Pattern:** `{type}[:subtask]:{status}[:active]`
+- `type`: `task` | `project`
+- `subtask`: (Optional) Included if the item is a child of another project.
+- `status`: `open` | `in-progress` | `closed`
+- `active`: (Optional) Included if the task is currently active.
+
+*Example: `task:subtask:in-progress:active`*
+
+**Artifact Pattern:** `artifact`
+- Used for all artifact nodes.
+
 ## Links
 - [**Root README**](/) - Installation, building, and monorepo architectural overview.
 - [**@tasklist/mcp**](../mcp/README.md) - Standalone MCP server details.

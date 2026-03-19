@@ -240,7 +240,18 @@ export class ArtifactRegistry {
             fs.mkdirSync(templatesDir, { recursive: true });
         }
         const filePath = path.join(templatesDir, `${type.id}.ai.md`);
-        fs.writeFileSync(filePath, serializeTemplateFile(type), 'utf-8');
+        
+        // Atomic write strategy: write to temp file then rename.
+        const tmpPath = `${filePath}.${Date.now()}.tmp`;
+        try {
+            fs.writeFileSync(tmpPath, serializeTemplateFile(type), 'utf-8');
+            fs.renameSync(tmpPath, filePath);
+        } catch (err) {
+            if (fs.existsSync(tmpPath)) {
+                fs.unlinkSync(tmpPath);
+            }
+            throw err;
+        }
         this.registerType(type);
     }
 }

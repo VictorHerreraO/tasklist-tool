@@ -167,9 +167,9 @@ describe('TaskManager', () => {
             manager.createTask('task-a'); // open
             manager.createTask('task-b'); // will become in-progress
             manager.createTask('task-c'); // will become closed
-            manager.start_task('task-b');
-            manager.start_task('task-c');
-            manager.close_task('task-c');
+            manager.startTask('task-b');
+            manager.startTask('task-c');
+            manager.closeTask('task-c');
         });
 
         it('returns all top-level tasks when no filter is given', () => {
@@ -229,7 +229,7 @@ describe('TaskManager', () => {
             });
 
             it('filters subtasks by status', () => {
-                manager.start_task('sub-1', 'task-a');
+                manager.startTask('sub-1', 'task-a');
                 const result = manager.listTasks(TaskStatus.InProgress, 'task-a');
                 assert.strictEqual(result.length, 1);
                 assert.strictEqual(result[0].id, 'sub-1');
@@ -445,75 +445,75 @@ describe('TaskManager', () => {
 
         it('start_task throws for subtask without parentTaskId', () => {
             assert.throws(
-                () => manager.start_task(SUBTASK_ID),
+                () => manager.startTask(SUBTASK_ID),
                 new RegExp(`Task '${SUBTASK_ID}' not found\\.`)
             );
         });
 
-        it('start_task works for subtask WITH parentTaskId', () => {
-            const entry = manager.start_task(SUBTASK_ID, PROJECT_ID);
+        it('startTask works for subtask WITH parentTaskId', () => {
+            const entry = manager.startTask(SUBTASK_ID, PROJECT_ID);
             assert.strictEqual(entry.status, TaskStatus.InProgress);
         });
 
-        it('close_task throws for subtask without parentTaskId', () => {
-            manager.start_task(SUBTASK_ID, PROJECT_ID);
+        it('closeTask throws for subtask without parentTaskId', () => {
+            manager.startTask(SUBTASK_ID, PROJECT_ID);
             assert.throws(
-                () => manager.close_task(SUBTASK_ID),
+                () => manager.closeTask(SUBTASK_ID),
                 new RegExp(`Task '${SUBTASK_ID}' not found\\.`)
             );
         });
 
-        it('close_task works for subtask WITH parentTaskId', () => {
-            manager.start_task(SUBTASK_ID, PROJECT_ID);
-            const entry = manager.close_task(SUBTASK_ID, PROJECT_ID);
+        it('closeTask works for subtask WITH parentTaskId', () => {
+            manager.startTask(SUBTASK_ID, PROJECT_ID);
+            const entry = manager.closeTask(SUBTASK_ID, PROJECT_ID);
             assert.strictEqual(entry.status, TaskStatus.Closed);
         });
     });
 
     // ── State machine: valid transitions ───────────────────────────────────
 
-    describe('start_task (open → in-progress)', () => {
+    describe('startTask (open → in-progress)', () => {
         it('transitions status to in-progress', () => {
             manager.createTask('t1');
-            const entry = manager.start_task('t1');
+            const entry = manager.startTask('t1');
             assert.strictEqual(entry.status, TaskStatus.InProgress);
         });
 
         it('updates updatedAt timestamp', () => {
             manager.createTask('t1');
             const before = Date.now();
-            const entry = manager.start_task('t1');
+            const entry = manager.startTask('t1');
             assert.ok(entry.updatedAt >= before);
         });
 
         it('persists status change to disk', () => {
             manager.createTask('t1');
-            manager.start_task('t1');
+            manager.startTask('t1');
             const manager2 = new TaskManager(workspaceRoot);
             assert.strictEqual(manager2.listTasks()[0].status, TaskStatus.InProgress);
         });
     });
 
-    describe('close_task (in-progress → closed)', () => {
+    describe('closeTask (in-progress → closed)', () => {
         it('transitions status to closed', () => {
             manager.createTask('t2');
-            manager.start_task('t2');
-            const entry = manager.close_task('t2');
+            manager.startTask('t2');
+            const entry = manager.closeTask('t2');
             assert.strictEqual(entry.status, TaskStatus.Closed);
         });
 
         it('updates updatedAt timestamp', () => {
             manager.createTask('t2');
-            manager.start_task('t2');
+            manager.startTask('t2');
             const before = Date.now();
-            const entry = manager.close_task('t2');
+            const entry = manager.closeTask('t2');
             assert.ok(entry.updatedAt >= before);
         });
 
         it('persists status change to disk', () => {
             manager.createTask('t2');
-            manager.start_task('t2');
-            manager.close_task('t2');
+            manager.startTask('t2');
+            manager.closeTask('t2');
             const manager2 = new TaskManager(workspaceRoot);
             assert.strictEqual(manager2.listTasks()[0].status, TaskStatus.Closed);
         });
@@ -522,54 +522,54 @@ describe('TaskManager', () => {
     // ── State machine: invalid transitions ─────────────────────────────────
 
     describe('invalid state transitions', () => {
-        it('start_task throws when task does not exist', () => {
+        it('startTask throws when task does not exist', () => {
             assert.throws(
-                () => manager.start_task('ghost'),
+                () => manager.startTask('ghost'),
                 /Task 'ghost' not found\./
             );
         });
 
-        it('start_task throws when status is in-progress (exact message)', () => {
+        it('startTask throws when status is in-progress (exact message)', () => {
             manager.createTask('t3');
-            manager.start_task('t3');
+            manager.startTask('t3');
             assert.throws(
-                () => manager.start_task('t3'),
+                () => manager.startTask('t3'),
                 /Cannot start task 't3': current status is 'in-progress', expected 'open'\./
             );
         });
 
-        it('start_task throws when status is closed (exact message)', () => {
+        it('startTask throws when status is closed (exact message)', () => {
             manager.createTask('t4');
-            manager.start_task('t4');
-            manager.close_task('t4');
+            manager.startTask('t4');
+            manager.closeTask('t4');
             assert.throws(
-                () => manager.start_task('t4'),
+                () => manager.startTask('t4'),
                 /Cannot start task 't4': current status is 'closed', expected 'open'\./
             );
         });
 
-        it('close_task throws when task does not exist', () => {
+        it('closeTask throws when task does not exist', () => {
             assert.throws(
-                () => manager.close_task('ghost'),
+                () => manager.closeTask('ghost'),
                 /Task 'ghost' not found\./
             );
         });
 
-        it('close_task throws when status is open (exact message with hint)', () => {
+        it('closeTask throws when status is open (exact message with hint)', () => {
             manager.createTask('t5');
             assert.throws(
-                () => manager.close_task('t5'),
-                /Cannot close task 't5': current status is 'open', expected 'in-progress'\. Use 'start_task' first\./
+                () => manager.closeTask('t5'),
+                /Cannot close task 't5': current status is 'open', expected 'in-progress'\. Use 'startTask' first\./
             );
         });
 
-        it('close_task throws when status is already closed (exact message)', () => {
+        it('closeTask throws when status is already closed (exact message)', () => {
             manager.createTask('t6');
-            manager.start_task('t6');
-            manager.close_task('t6');
+            manager.startTask('t6');
+            manager.closeTask('t6');
             assert.throws(
-                () => manager.close_task('t6'),
-                /Cannot close task 't6': current status is 'closed', expected 'in-progress'\. Use 'start_task' first\./
+                () => manager.closeTask('t6'),
+                /Cannot close task 't6': current status is 'closed', expected 'in-progress'\. Use 'startTask' first\./
             );
         });
     });

@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { TaskManager } from '@tasklist/core';
 import { ITaskIdParams } from './interfaces.js';
+import { mapToolError } from './toolUtils.js';
 
 /**
  * Language model tool that promotes an existing task to a project.
@@ -76,24 +77,12 @@ export class PromoteToProjectTool implements vscode.LanguageModelTool<ITaskIdPar
             ]);
         } catch (err: unknown) {
             const message = err instanceof Error ? err.message : String(err);
-
-            // Provide recovery-oriented guidance for common errors.
-            if (message.includes('not found')) {
-                throw new Error(
-                    `Cannot promote task: ${message} ` +
-                    `Please check the taskId or use 'list_tasks' to find the correct identifier.`
-                );
-            }
             if (message.includes('already a project')) {
                 throw new Error(
                     `Task '${taskId}' is already a project and does not need to be promoted.`
                 );
             }
-
-            throw new Error(
-                `Failed to promote task '${taskId}' to a project: ${message}. ` +
-                `Ensure the workspace is writable and the task exists in the root index.`
-            );
+            throw mapToolError(err, taskId, 'promote task');
         }
     }
 }

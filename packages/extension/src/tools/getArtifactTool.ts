@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { TaskManager, ArtifactService } from '@tasklist/core';
 import { IGetArtifactParams } from './interfaces.js';
+import { resolveTaskContext, mapToolError } from './toolUtils.js';
 
 /**
  * Language model tool that retrieves the content of a specific artifact.
@@ -31,28 +32,6 @@ export class GetArtifactTool implements vscode.LanguageModelTool<IGetArtifactPar
     constructor(taskManager: TaskManager, artifactService: ArtifactService) {
         this.taskManager = taskManager;
         this.artifactService = artifactService;
-    }
-
-    /**
-     * Resolves the effective task context from explicit input or the active task.
-     *
-     * @param taskId - The optional task ID from the tool input.
-     * @param parentTaskId - The optional parent task ID from the tool input.
-     * @returns The resolved task ID and optional parentTaskId.
-     * @throws {Error} If no taskId is supplied and no task is currently active.
-     */
-    private resolveTaskContext(taskId?: string, parentTaskId?: string): { taskId: string; parentTaskId?: string } {
-        if (taskId) {
-            return { taskId, parentTaskId };
-        }
-        const active = this.taskManager.getActiveTask();
-        if (!active) {
-            throw new Error(
-                'No taskId was provided and there is no currently active task. ' +
-                'Pass an explicit taskId or activate a task first using `activate_task`.'
-            );
-        }
-        return { taskId: active.id, parentTaskId: active.parentTaskId };
     }
 
     /**
@@ -98,7 +77,7 @@ export class GetArtifactTool implements vscode.LanguageModelTool<IGetArtifactPar
         _token: vscode.CancellationToken
     ): Promise<vscode.LanguageModelToolResult> {
         const { artifactType } = options.input;
-        const { taskId, parentTaskId } = this.resolveTaskContext(options.input.taskId, options.input.parentTaskId);
+        const { taskId, parentTaskId } = resolveTaskContext(this.taskManager, options.input.taskId, options.input.parentTaskId);
 
         try {
             const content = this.artifactService.getArtifact(taskId, artifactType, parentTaskId);
@@ -122,24 +101,13 @@ export class GetArtifactTool implements vscode.LanguageModelTool<IGetArtifactPar
             ]);
         } catch (err: unknown) {
             const message = err instanceof Error ? err.message : String(err);
-
-            if (message.includes('not found')) {
-                throw new Error(
-                    `Task '${taskId}' not found. ` +
-                    `AI Agent might have forgot to provide a parent project id. ` +
-                    `Use 'list_tasks' to see available tasks, then retry with a valid taskId and parentTaskId if applicable.`
-                );
-            }
             if (message.includes('Unknown artifact type')) {
                 throw new Error(
                     `Unknown artifact type '${artifactType}'. ` +
                     `Use 'list_artifact_types' to see available types, then retry with a valid artifactType.`
                 );
             }
-            throw new Error(
-                `Failed to get artifact '${artifactType}' for task '${taskId}': ${message}. ` +
-                `Verify the artifactType and taskId are correct.`
-            );
+            throw mapToolError(err, taskId, `get artifact '${artifactType}'`);
         }
     }
 }
