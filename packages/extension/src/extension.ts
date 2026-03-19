@@ -1,24 +1,12 @@
 import * as vscode from 'vscode';
 import { TaskManager, ArtifactRegistry, ArtifactService, TaskEventType } from '@tasklist/core';
-import { ListTasksTool } from './tools/listTasksTool.js';
-import { CreateTaskTool } from './tools/createTaskTool.js';
-import { ActivateTaskTool } from './tools/activateTaskTool.js';
-import { DeactivateTaskTool } from './tools/deactivateTaskTool.js';
-import { StartTaskTool } from './tools/startTaskTool.js';
-import { CloseTaskTool } from './tools/closeTaskTool.js';
-import { ListArtifactTypesTool } from './tools/listArtifactTypesTool.js';
-import { ListArtifactsTool } from './tools/listArtifactsTool.js';
-import { GetArtifactTool } from './tools/getArtifactTool.js';
-import { UpdateArtifactTool } from './tools/updateArtifactTool.js';
-import { RegisterArtifactTypeTool } from './tools/registerArtifactTypeTool.js';
-import { PromoteToProjectTool } from './tools/promoteToProjectTool.js';
-import { TaskTreeProvider, TaskTreeItem } from './views/TaskTreeProvider.js';
-import { TasklistWizard } from './views/TasklistWizard.js';
+import { TaskTreeProvider } from './views/TaskTreeProvider.js';
+import { registerViews } from './views/viewRegistry.js';
+import { registerCommands } from './commands.js';
+import { registerTools } from './tools/toolRegistry.js';
 
 /**
  * Activates the extension.
- *
- * @param context The extension context.
  */
 export async function activate(context: vscode.ExtensionContext) {
     const outputChannel = vscode.window.createOutputChannel('Tasklist Tool');
@@ -27,230 +15,21 @@ export async function activate(context: vscode.ExtensionContext) {
 
     let taskManager: TaskManager | undefined;
     let artifactService: ArtifactService | undefined;
-    const treeProvider = new TaskTreeProvider();
-
-    // 1. Immediate UI Registration
-    const treeView = vscode.window.createTreeView('tasklist-tree', {
-        treeDataProvider: treeProvider,
-        showCollapseAll: true
-    });
-    context.subscriptions.push(
-        treeView,
-        treeView.onDidExpandElement(e => {
-            treeProvider.setExpanded(e.element.id!, true);
-        }),
-        treeView.onDidCollapseElement(e => {
-            treeProvider.setExpanded(e.element.id!, false);
-        })
-    );
-
-    const getSelectedNode = (node: TaskTreeItem | undefined): TaskTreeItem | undefined => {
-        if (node) {
-            return node;
-        }
-        if (treeView.selection && treeView.selection.length > 0) {
-            return treeView.selection[0];
-        }
-        return undefined;
-    };
-
-    // 2. Command Registration (Early)
-    context.subscriptions.push(
-        vscode.commands.registerCommand('tasklist.activateTask', async (node: TaskTreeItem) => {
-            if (!taskManager) {
-                return;
-            }
-            const target = getSelectedNode(node);
-            if (!target) {
-                vscode.window.showWarningMessage("No task or project selected in the Sidebar.");
-                return;
-            }
-            try {
-                await taskManager.activateTask(target.task.id, target.task.parentTaskId);
-            } catch (error) {
-                const msg = `Failed to activate task: ${error instanceof Error ? error.message : String(error)}`;
-                outputChannel.appendLine(msg);
-                vscode.window.showErrorMessage(msg);
-            }
-        }),
-        vscode.commands.registerCommand('tasklist.refresh', () => {
-            treeProvider.refresh();
-        }),
-        // ... (rest of the commands using try-catch as before)
-        vscode.commands.registerCommand('tasklist.startTask', async (node: TaskTreeItem) => {
-            if (!taskManager) {
-                return;
-            }
-            const target = getSelectedNode(node);
-            if (!target) {
-                vscode.window.showWarningMessage("No task or project selected in the Sidebar.");
-                return;
-            }
-            try {
-                await taskManager.start_task(target.task.id, target.task.parentTaskId);
-            } catch (error) {
-                const msg = `Failed to start task: ${error instanceof Error ? error.message : String(error)}`;
-                outputChannel.appendLine(msg);
-                vscode.window.showErrorMessage(msg);
-            }
-        }),
-        vscode.commands.registerCommand('tasklist.closeTask', async (node: TaskTreeItem) => {
-            if (!taskManager) {
-                return;
-            }
-            const target = getSelectedNode(node);
-            if (!target) {
-                vscode.window.showWarningMessage("No task or project selected in the Sidebar.");
-                return;
-            }
-            try {
-                await taskManager.close_task(target.task.id, target.task.parentTaskId);
-            } catch (error) {
-                const msg = `Failed to close task: ${error instanceof Error ? error.message : String(error)}`;
-                outputChannel.appendLine(msg);
-                vscode.window.showErrorMessage(msg);
-            }
-        }),
-        vscode.commands.registerCommand('tasklist.promoteTask', async (node: TaskTreeItem) => {
-            if (!taskManager) {
-                return;
-            }
-            const target = getSelectedNode(node);
-            if (!target) {
-                vscode.window.showWarningMessage("No task or project selected in the Sidebar.");
-                return;
-            }
-            try {
-                await taskManager.promoteTaskToProject(target.task.id);
-            } catch (error) {
-                const msg = `Failed to promote task to project: ${error instanceof Error ? error.message : String(error)}`;
-                outputChannel.appendLine(msg);
-                vscode.window.showErrorMessage(msg);
-            }
-        }),
-        vscode.commands.registerCommand('tasklist.addSubtask', async (node: TaskTreeItem) => {
-            if (!taskManager) {
-                return;
-            }
-            const target = getSelectedNode(node);
-            if (!target) {
-                vscode.window.showWarningMessage("No project selected in the Sidebar.");
-                return;
-            }
-            if (target.task.type !== 'project') {
-                vscode.window.showWarningMessage("Subtasks can only be added to projects.");
-                return;
-            }
-            // Trigger creation wizard directly on the ID input step for this project
-            const result = await TasklistWizard.run(taskManager, target.task.id);
-            if (result) {
-                setTimeout(async () => {
-                    const item = await treeProvider.getItemForId(result.id, result.parentTaskId);
-                    if (item) {
-                        treeView.reveal(item, { select: true, focus: true, expand: true });
-                    }
-                }, 200);
-            }
-        }),
-        vscode.commands.registerCommand('tasklist.createTask', async (args?: unknown) => {
-            // If triggered from a tree item context (e.g., Command Palette with selection), 
-            // ignore the node and launch the wizard for a clean experience.
-            if (args instanceof TaskTreeItem || (args && typeof args === 'object' && 'task' in args)) {
-                args = undefined;
-            }
-
-            // Handle array if passed from some VS Code contexts (e.g. command URIs)
-            const normalizedArgs = (Array.isArray(args) ? args[0] : args) as {
-                id?: string;
-                type?: 'task' | 'project';
-                parentTaskId?: string;
-            } | undefined;
-
-            const taskId = normalizedArgs?.id;
-            const type = normalizedArgs?.type || 'task';
-            const parentTaskId = normalizedArgs?.parentTaskId;
-
-            if (!taskId) {
-                // Interactive flow
-                if (taskManager) {
-                    const result = await TasklistWizard.run(taskManager, parentTaskId);
-                    if (result) {
-                        setTimeout(async () => {
-                            const item = await treeProvider.getItemForId(result.id, result.parentTaskId);
-                            if (item) {
-                                treeView.reveal(item, { select: true, focus: true, expand: true });
-                            }
-                        }, 200);
-                    }
-                } else {
-                    const msg = 'No active workspace. Task creation failed.';
-                    outputChannel.appendLine(msg);
-                    vscode.window.showErrorMessage(msg);
-                }
-                return;
-            }
-
-            try {
-                if (taskManager) {
-                    await taskManager.createTask(taskId, type as 'task' | 'project', parentTaskId);
-                    vscode.window.showInformationMessage(`Task '${taskId}' created.`);
-                } else {
-                    const msg = 'No active workspace. Task creation failed.';
-                    outputChannel.appendLine(msg);
-                    vscode.window.showErrorMessage(msg);
-                }
-            } catch (error) {
-                const msg = `Failed to create task: ${error instanceof Error ? error.message : String(error)}`;
-                outputChannel.appendLine(msg);
-                vscode.window.showErrorMessage(msg);
-            }
-        }),
-        vscode.commands.registerCommand('tasklist.openTaskDetails', async (node: TaskTreeItem) => {
-            if (!artifactService || !taskManager) {
-                outputChannel.appendLine('Artifact service not initialized. Please ensure a workspace is open.');
-                vscode.window.showWarningMessage('Artifact service not initialized. Please ensure a workspace is open.');
-                return;
-            }
-            const target = getSelectedNode(node);
-            if (!target) {
-                vscode.window.showWarningMessage("No task or project selected in the Sidebar.");
-                return;
-            }
-            try {
-                const taskId = target.task.id;
-                const parentTaskId = target.task.parentTaskId;
-                const artifacts = artifactService.listArtifacts(taskId, parentTaskId);
-                const detailsArtifact = artifacts.find(a => a.type.id === 'task-details');
-
-                if (detailsArtifact?.exists) {
-                    const doc = await vscode.workspace.openTextDocument(vscode.Uri.file(detailsArtifact.path));
-                    await vscode.window.showTextDocument(doc);
-                } else {
-                    const selection = await vscode.window.showInformationMessage(
-                        `Task details for '${taskId}' do not exist. Would you like to create them from the template?`,
-                        'Create',
-                        'Cancel'
-                    );
-
-                    if (selection === 'Create') {
-                        const content = artifactService.getArtifact(taskId, 'task-details', parentTaskId);
-                        artifactService.updateArtifact(taskId, 'task-details', content, parentTaskId);
-                        // Refresh and open
-                        const doc = await vscode.workspace.openTextDocument(vscode.Uri.file(detailsArtifact!.path));
-                        await vscode.window.showTextDocument(doc);
-                    }
-                }
-            } catch (error) {
-                const msg = `Failed to open task details: ${error instanceof Error ? error.message : String(error)}`;
-                outputChannel.appendLine(msg);
-                vscode.window.showErrorMessage(msg);
-            }
-        })
-    );
-
-    // 3. Service Initialization Logic
     let serviceSubscriptions: vscode.Disposable[] = [];
     
+    const treeProvider = new TaskTreeProvider();
+    const treeView = registerViews(context, treeProvider);
+
+    // Command Registration (Early)
+    registerCommands(
+        context,
+        treeProvider,
+        treeView,
+        outputChannel,
+        () => taskManager,
+        () => artifactService
+    );
+
     const initializeServices = async () => {
         try {
             // Clean up previous registrations to prevent duplicates on workspace folder changes
@@ -293,27 +72,9 @@ export async function activate(context: vscode.ExtensionContext) {
             });
             serviceSubscriptions.push({ dispose: taskUpdateSubscription });
 
-            // Tool Registration (only if workspace is open)
-            serviceSubscriptions.push(
-                vscode.lm.registerTool('list_tasks', new ListTasksTool(taskManager)),
-                vscode.lm.registerTool('create_task', new CreateTaskTool(taskManager)),
-                vscode.lm.registerTool('activate_task', new ActivateTaskTool(taskManager)),
-                vscode.lm.registerTool('deactivate_task', new DeactivateTaskTool(taskManager)),
-                vscode.lm.registerTool('start_task', new StartTaskTool(taskManager)),
-                vscode.lm.registerTool('close_task', new CloseTaskTool(taskManager)),
-                vscode.lm.registerTool('promote_to_project', new PromoteToProjectTool(taskManager)),
-                vscode.lm.registerTool('list_artifact_types', new ListArtifactTypesTool(registry)),
-                vscode.lm.registerTool('list_artifacts', new ListArtifactsTool(taskManager, artifactService)),
-                vscode.lm.registerTool('get_artifact', new GetArtifactTool(taskManager, artifactService)),
-                vscode.lm.registerTool('update_artifact', new UpdateArtifactTool(taskManager, artifactService)),
-                vscode.lm.registerTool('register_artifact_type', new RegisterArtifactTypeTool(workspaceRoot, registry)),
-            );
-
-            // Link the local list of subscriptions to the overall extension lifecycle
-            // This ensures they are disposed when the extension is deactivated
-            for (const sub of serviceSubscriptions) {
-                context.subscriptions.push(sub);
-            }
+            // Tool Registration
+            const tools = registerTools(taskManager, registry, artifactService, workspaceRoot);
+            serviceSubscriptions.push(...tools);
 
             outputChannel.appendLine('Tasklist Tool: Services initialized.');
         } catch (error) {
